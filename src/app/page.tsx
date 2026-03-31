@@ -13,8 +13,7 @@ interface Spirit {
 }
 
 const SPIRIT_EMOJI: Record<string, string> = {
-  cat: '🐱', dog: '🐶', bird: '🐦', rabbit: '🐰',
-  hamster: '🐹', fish: '🐠', human: '👤',
+  pet_cat: '🐱', pet_dog: '🐶', pet_other: '🐾', human: '👤',
 }
 
 export default function Home() {
