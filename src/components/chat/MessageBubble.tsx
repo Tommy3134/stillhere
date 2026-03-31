@@ -4,25 +4,33 @@ interface MessageBubbleProps {
   content: string
   role: 'user' | 'spirit'
   timestamp?: string
+  spiritType?: string
 }
 
-const SPIRIT_EMOJI = '🐱'
+function getEmoji(spiritType?: string) {
+  switch (spiritType) {
+    case 'pet_dog': return '🐶'
+    case 'pet_other': return '🐾'
+    case 'human': return '👤'
+    default: return '🐱'
+  }
+}
 
-export default function MessageBubble({ content, role, timestamp }: MessageBubbleProps) {
+export default function MessageBubble({ content, role, timestamp, spiritType }: MessageBubbleProps) {
   const isUser = role === 'user'
   return (
-    <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}>
+    <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} animate-[fadeIn_0.3s_ease-in]`}>
       <div className={`flex gap-2 ${isUser ? 'flex-row-reverse' : ''}`}>
         {!isUser && (
-          <div className="w-8 h-8 rounded-full bg-white shadow flex items-center justify-center text-xl">
-            {SPIRIT_EMOJI}
+          <div className="w-8 h-8 rounded-full bg-white shadow flex items-center justify-center text-xl shrink-0">
+            {getEmoji(spiritType)}
           </div>
         )}
         <div
           className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed break-words ${
             isUser
-              ? 'bg-amber-500 text-white rounded-tr-none'
-              : 'bg-white text-stone-700 rounded-tl-none'
+              ? 'bg-blue-100 text-stone-700 rounded-tr-none'
+              : 'bg-white text-stone-700 rounded-tl-none shadow-sm'
           }`}
         >
           {content}

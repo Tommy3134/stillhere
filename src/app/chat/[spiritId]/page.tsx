@@ -31,6 +31,7 @@ export default function ChatPage({ params }: { params: { spiritId: string } }) {
   const router = useRouter()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [spiritInfo, setSpiritInfo] = useState<SpiritInfo | null>(null)
+  const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const listRef = useRef<HTMLDivElement | null>(null)
 
@@ -38,12 +39,12 @@ export default function ChatPage({ params }: { params: { spiritId: string } }) {
 
   // 加载分身信息
   useEffect(() => {
+    setLoading(true)
     fetch(`/api/spirit?id=${spiritId}`)
       .then(res => res.json())
       .then(data => {
         if (data.spirit) {
           setSpiritInfo({ name: data.spirit.name, spiritType: data.spirit.spiritType })
-          // 添加欢迎消息
           setMessages([{
             id: createId(),
             content: `你来啦！我好想你~`,
@@ -53,6 +54,7 @@ export default function ChatPage({ params }: { params: { spiritId: string } }) {
         }
       })
       .catch(console.error)
+      .finally(() => setLoading(false))
   }, [spiritId])
 
   useEffect(() => {
@@ -60,14 +62,8 @@ export default function ChatPage({ params }: { params: { spiritId: string } }) {
     listRef.current.scrollTop = listRef.current.scrollHeight
   }, [messages])
 
-  const avatarEmoji = spiritInfo?.spiritType === 'pet_dog' ? '🐶'
-    : spiritInfo?.spiritType === 'pet_other' ? '🐾'
-    : spiritInfo?.spiritType === 'human' ? '👤'
-    : '🐱'
-
   const handleSend = async (message: string) => {
     if (sending) return
-    // 添加用户消息
     setMessages(prev => [...prev, {
       id: createId(),
       content: message,
@@ -86,14 +82,12 @@ export default function ChatPage({ params }: { params: { spiritId: string } }) {
       const contentType = res.headers.get('content-type') || ''
 
       if (contentType.includes('text/event-stream')) {
-        // SSE流式回复
         const reader = res.body!.getReader()
         const decoder = new TextDecoder()
         let buffer = ''
         let replyText = ''
         const replyId = createId()
 
-        // 先添加空的回复气泡
         setMessages(prev => [...prev, {
           id: replyId,
           content: '',
@@ -124,7 +118,6 @@ export default function ChatPage({ params }: { params: { spiritId: string } }) {
           }
         }
       } else {
-        // JSON回复（mock模式）
         const data = await res.json()
         if (data.message) {
           setMessages(prev => [...prev, {
@@ -142,21 +135,40 @@ export default function ChatPage({ params }: { params: { spiritId: string } }) {
     }
   }
 
-  return (
-    <main className="min-h-screen bg-amber-50">
-      <div className="mx-auto flex h-screen max-w-md flex-col">
-        <ChatHeader
-          name={spiritInfo?.name || '加载中...'}
-          avatarEmoji={avatarEmoji}
-          onBack={() => router.back()}
-        />
-        <div ref={listRef} className="flex-1 space-y-4 overflow-y-auto px-4 py-6">
-          {messages.map(message => (
-            <MessageBubble key={message.id} {...message} />
-          ))}
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-amber-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-amber-200 border-t-amber-500 rounded-full animate-spin" />
+          <span className="text-sm text-stone-400">正在连接彼岸世界...</span>
         </div>
-        <ChatInput onSend={handleSend} placeholder="告诉它你现在的心情..." />
-      </div>
-    </main>
+      </main>
+    )
+  }
+
+  return (
+    <>
+      <style jsx global>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+      <main className="min-h-screen bg-amber-50">
+        <div className="mx-auto flex h-screen max-w-md flex-col">
+          <ChatHeader
+            name={spiritInfo?.name || ''}
+            spiritType={spiritInfo?.spiritType}
+            onBack={() => router.back()}
+          />
+          <div ref={listRef} className="flex-1 space-y-4 overflow-y-auto px-4 py-6">
+            {messages.map(message => (
+              <MessageBubble key={message.id} {...message} spiritType={spiritInfo?.spiritType} />
+            ))}
+          </div>
+          <ChatInput onSend={handleSend} placeholder="说点什么..." />
+        </div>
+      </main>
+    </>
   )
 }

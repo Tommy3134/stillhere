@@ -4,17 +4,33 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { LoginButton } from '@/components/LoginButton'
 
+interface Spirit {
+  id: string
+  name: string
+  spiritType: string
+  photoUrls: string[]
+  statuses: Array<{ content: string }>
+}
+
+const SPIRIT_EMOJI: Record<string, string> = {
+  cat: '🐱', dog: '🐶', bird: '🐦', rabbit: '🐰',
+  hamster: '🐹', fish: '🐠', human: '👤',
+}
+
 export default function Home() {
-  const [count, setCount] = useState(0)
+  const [spirits, setSpirits] = useState<Spirit[]>([])
 
   useEffect(() => {
     fetch('/api/spirit')
       .then(res => res.json())
-      .then(data => setCount(data.spirits?.length || 0))
+      .then(data => setSpirits(data.spirits || []))
       .catch(() => {})
   }, [])
+
+  const displaySpirits = spirits.slice(0, 6)
+
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center px-6">
+    <main className="min-h-screen flex flex-col items-center justify-center px-6 py-12">
       <div className="max-w-md w-full text-center space-y-8">
         {/* 标题区 */}
         <div className="space-y-3">
@@ -54,9 +70,49 @@ export default function Home() {
 
         {/* 底部统计 */}
         <p className="text-sm text-stone-400 pt-4">
-          已有 <span className="text-amber-600 font-medium">{count}</span> 个生命在这里生活
+          已有 <span className="text-amber-600 font-medium">{spirits.length}</span> 个生命在这里生活
         </p>
       </div>
+
+      {/* 彼岸世界的居民 */}
+      {displaySpirits.length > 0 && (
+        <div className="max-w-lg w-full mt-16 space-y-6">
+          <h2 className="text-center text-lg font-light text-stone-500 tracking-wide">
+            彼岸世界的居民
+          </h2>
+          <div className="grid grid-cols-2 gap-4">
+            {displaySpirits.map(spirit => (
+              <Link
+                key={spirit.id}
+                href={`/share/${spirit.id}`}
+                className="block bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow"
+              >
+                <div className="flex flex-col items-center text-center space-y-2">
+                  {spirit.photoUrls?.[0] ? (
+                    <img
+                      src={spirit.photoUrls[0]}
+                      alt={spirit.name}
+                      className="w-16 h-16 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-amber-50 flex items-center justify-center">
+                      <span className="text-3xl">
+                        {SPIRIT_EMOJI[spirit.spiritType] || '✨'}
+                      </span>
+                    </div>
+                  )}
+                  <p className="text-sm font-medium text-stone-700">{spirit.name}</p>
+                  {spirit.statuses?.[0]?.content && (
+                    <p className="text-xs text-stone-400 line-clamp-2 leading-relaxed">
+                      {spirit.statuses[0].content}
+                    </p>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
     </main>
   )
 }

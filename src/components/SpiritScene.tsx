@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import SpiritAvatarSVG from './SpiritAvatarSVG'
 
 type Mood = 'sleepy' | 'playful' | 'content' | 'curious' | 'happy'
 
@@ -77,28 +78,9 @@ export default function SpiritScene({ name, spiritType, mood, photoUrl, homeStyl
 }
 
 function SpiritAvatar({ spiritType, mood }: { spiritType: string; mood: Mood }) {
-  const catMoods: Record<Mood, string> = {
-    sleepy: '😴',
-    playful: '😸',
-    content: '😺',
-    curious: '🙀',
-    happy: '😻',
-  }
-  const dogMoods: Record<Mood, string> = {
-    sleepy: '🐶',
-    playful: '🐕',
-    content: '🐶',
-    curious: '🐕‍🦺',
-    happy: '🐶',
-  }
-
-  const emoji = spiritType === 'pet_cat' ? (catMoods[mood] || '😺')
-    : spiritType === 'pet_dog' ? (dogMoods[mood] || '🐶')
-    : spiritType === 'human' ? '👤' : '🐾'
-
   return (
-    <div className="w-24 h-24 rounded-full bg-white/60 backdrop-blur-sm flex items-center justify-center shadow-lg border-4 border-white">
-      <span className="text-5xl">{emoji}</span>
+    <div className="w-24 h-24 rounded-full bg-white/60 backdrop-blur-sm flex items-center justify-center shadow-lg border-4 border-white overflow-hidden">
+      <SpiritAvatarSVG spiritType={spiritType} mood={mood} size={80} />
     </div>
   )
 }

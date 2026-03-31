@@ -8,7 +8,7 @@ interface ChatInputProps {
   placeholder?: string
 }
 
-export default function ChatInput({ onSend, disabled = false, placeholder = '说点什么…' }: ChatInputProps) {
+export default function ChatInput({ onSend, disabled = false, placeholder = '说点什么...' }: ChatInputProps) {
   const [value, setValue] = useState('')
 
   const sendMessage = () => {
@@ -28,14 +28,14 @@ export default function ChatInput({ onSend, disabled = false, placeholder = '说
   const isDisabled = disabled || value.trim() === ''
 
   return (
-    <div className="flex items-end gap-3 px-4 py-3 bg-amber-50 border-t border-amber-100">
+    <div className="sticky bottom-0 flex items-end gap-3 px-4 py-3 bg-amber-50/70 backdrop-blur-md border-t border-amber-100">
       <textarea
         value={value}
         onChange={event => setValue(event.target.value)}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         rows={1}
-        className="flex-1 resize-none rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-700 focus:border-amber-500 focus:outline-none"
+        className="flex-1 resize-none rounded-full border border-stone-200 bg-white px-4 py-3 text-sm text-stone-700 focus:border-amber-500 focus:outline-none"
       />
       <button
         type="button"
