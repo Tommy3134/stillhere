@@ -60,7 +60,15 @@ function pickFallback(): string {
   return FALLBACK_STATUSES[Math.floor(Math.random() * FALLBACK_STATUSES.length)]
 }
 
+export async function GET() {
+  return handleGenerate()
+}
+
 export async function POST() {
+  return handleGenerate()
+}
+
+async function handleGenerate() {
   try {
     const spirits = await prisma.spirit.findMany({
       where: { isActive: true },
