@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import SpiritScene from '@/components/SpiritScene'
 
 const MOOD_CONFIG: Record<string, { emoji: string; bg: string; label: string }> = {
   sleepy: { emoji: '💤', bg: 'bg-blue-100', label: '犯困' },
@@ -9,13 +10,6 @@ const MOOD_CONFIG: Record<string, { emoji: string; bg: string; label: string }> 
   content: { emoji: '😊', bg: 'bg-green-100', label: '满足' },
   curious: { emoji: '🔍', bg: 'bg-purple-100', label: '好奇' },
   happy: { emoji: '✨', bg: 'bg-amber-100', label: '开心' },
-}
-
-const TYPE_EMOJI: Record<string, string> = {
-  pet_cat: '🐱',
-  pet_dog: '🐶',
-  pet_other: '🐾',
-  human: '👤',
 }
 
 interface SpiritStatus {
@@ -70,32 +64,23 @@ export default function SpiritPage({ params }: { params: { id: string } }) {
   const mood = latestStatus?.mood || 'content'
   const statusText = latestStatus?.content || '在彼岸世界安静地待着'
   const moodInfo = MOOD_CONFIG[mood] || MOOD_CONFIG.content
-  const emoji = TYPE_EMOJI[spirit.spiritType] || '🐾'
 
   return (
     <main className="min-h-screen bg-amber-50 pb-24">
       <div className="max-w-md mx-auto px-6 py-8">
-        {/* 分身形象 */}
-        <div className="flex flex-col items-center mb-8">
-          <div className={`w-32 h-32 rounded-full ${moodInfo.bg} flex items-center justify-center mb-4 overflow-hidden`}>
-            {spirit.photoUrls?.length > 0 ? (
-              <img src={spirit.photoUrls[0]} alt={spirit.name} className="w-full h-full object-cover" />
-            ) : (
-              <span className="text-6xl">{emoji}</span>
-            )}
-          </div>
-          <h1 className="text-2xl font-light text-stone-700">{spirit.name}</h1>
-          <div className="flex items-center gap-2 mt-2">
-            <span className="text-sm text-stone-500">{statusText}</span>
-            <span>{moodInfo.emoji}</span>
-          </div>
-        </div>
+        {/* 分身场景 */}
+        <SpiritScene
+          name={spirit.name}
+          spiritType={spirit.spiritType}
+          mood={mood as 'sleepy' | 'playful' | 'content' | 'curious' | 'happy'}
+          photoUrl={spirit.photoUrls?.[0]}
+          homeStyle={spirit.homeStyle}
+          statusText={statusText}
+        />
 
-        {/* 状态卡片 */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm mb-6">
-          <p className="text-stone-600 text-center italic">
-            &ldquo;{statusText}&rdquo;
-          </p>
+        <div className="flex items-center justify-center gap-2 mt-4 mb-6">
+          <span className="text-sm text-stone-500">{moodInfo.label}</span>
+          <span>{moodInfo.emoji}</span>
         </div>
 
         {/* 快捷操作 */}
