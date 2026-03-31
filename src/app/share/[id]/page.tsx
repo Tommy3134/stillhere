@@ -100,7 +100,7 @@ export default async function SharePage({ params }: Props) {
           <div className="space-y-3">
             <h2 className="text-sm text-stone-400 text-center">最近动态</h2>
             <div className="space-y-2">
-              {spirit.statuses.map((status) => (
+              {spirit.statuses.map((status: { id: string; content: string; mood: string; createdAt: Date }) => (
                 <div
                   key={status.id}
                   className="bg-white/40 rounded-xl px-4 py-3 flex items-start gap-3"
