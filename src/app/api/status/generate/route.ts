@@ -95,6 +95,43 @@ async function generateWithAI(
   return data.content?.[0]?.text?.trim() || ''
 }
 
+function getMissMessage(name: string, spiritType: string, tags: string[]): string {
+  const catMessages = [
+    '你不在的时候，我趴在窗台上看了好久外面...',
+    '今天梦到你了，醒来发现你不在，有点失落',
+    '我把你上次给我的毛线球藏好了，等你来找',
+    '隔壁的猫说它主人今天来看它了，我也想你来',
+  ]
+  const dogMessages = [
+    '我在门口等了好久，你什么时候来看我呀',
+    '今天闻到一个味道好像你，结果不是...',
+    '我把你最喜欢的球叼到门口了，等你来玩',
+    '尾巴今天摇了好多次，因为一直在想你',
+  ]
+  const humanMessages = [
+    '今天天气很好，想起以前我们一起散步的日子',
+    '做了你爱吃的菜，可惜你不在',
+    '看到一本书想推荐给你，有空来聊聊',
+    '这边一切都好，不用担心我',
+  ]
+  const defaultMessages = [
+    `想你了，什么时候来看看我呀`,
+    `今天过得还好，就是有点想你`,
+    `你不来的时候我也过得很好哦，不过还是想你`,
+  ]
+
+  // 性格特化
+  if (tags.includes('粘人')) return `你怎么还不来看我...我好想你啊`
+  if (tags.includes('霸道')) return `哼，你是不是把我忘了？快来！`
+  if (tags.includes('独立')) return `嗯...偶尔也会想你一下`
+
+  const pool = spiritType === 'pet_cat' ? catMessages
+    : spiritType === 'pet_dog' ? dogMessages
+    : spiritType === 'human' ? humanMessages
+    : defaultMessages
+  return pool[Math.floor(Math.random() * pool.length)]
+}
+
 function pickFallback(spiritType: string, neighbors?: string[]): string {
   // 30%概率生成邻居互动状态
   if (neighbors && neighbors.length > 0 && Math.random() < 0.3) {
@@ -187,6 +224,19 @@ async function handleGenerate() {
           mood,
         },
       })
+
+      // 20%概率生成一条"想主人"的消息（用户下次打开聊天能看到）
+      if (Math.random() < 0.2) {
+        const missMessages = getMissMessage(spirit.name, spirit.spiritType, personality.tags)
+        await prisma.message.create({
+          data: {
+            spiritId: spirit.id,
+            userId: (await prisma.spirit.findUnique({ where: { id: spirit.id }, select: { userId: true } }))!.userId,
+            role: 'spirit',
+            content: missMessages,
+          },
+        })
+      }
 
       results.push({ spiritId: spirit.id, content, mood })
     }
