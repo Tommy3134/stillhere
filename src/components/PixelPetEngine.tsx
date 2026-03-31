@@ -15,6 +15,12 @@ interface PixelPetEngineProps {
   onInteract?: (type: 'pet' | 'feed') => void
 }
 
+// 粒子
+interface Particle {
+  x: number; y: number; vx: number; vy: number
+  life: number; maxLife: number; type: 'heart' | 'star' | 'food'
+}
+
 // 宠物状态
 interface PetState {
   x: number
@@ -23,7 +29,9 @@ interface PetState {
   frame: number
   direction: 1 | -1
   actionTimer: number
-  zzz: number // 睡觉时的Z动画
+  zzz: number
+  particles: Particle[]
+  foodBowl: number // 食碗显示倒计时
 }
 
 // 昼夜
@@ -639,7 +647,7 @@ const PET_COLORS: Record<string, string> = {
 export default function PixelPetEngine({ spiritType, mood, homeStyle, name, statusText, onInteract }: PixelPetEngineProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const stateRef = useRef<PetState>({
-    x: 0.5, y: 0, action: 'idle', frame: 0, direction: 1, actionTimer: 0, zzz: 0,
+    x: 0.5, y: 0, action: 'idle', frame: 0, direction: 1, actionTimer: 0, zzz: 0, particles: [], foodBowl: 0,
   })
   const [showBubble, setShowBubble] = useState(true)
   const animRef = useRef<number>(0)
@@ -673,6 +681,18 @@ export default function PixelPetEngine({ spiritType, mood, homeStyle, name, stat
 
     // 睡觉Z
     st.zzz = st.action === 'sleep' ? 1 : 0
+
+    // 食碗
+    if (st.foodBowl > 0) st.foodBowl--
+
+    // 粒子更新
+    st.particles = st.particles.filter(p => {
+      p.x += p.vx
+      p.y += p.vy
+      p.vy -= 0.02 // 重力反向（上飘）
+      p.life--
+      return p.life > 0
+    })
   }, [mood])
 
   const draw = useCallback(() => {
@@ -708,6 +728,33 @@ export default function PixelPetEngine({ spiritType, mood, homeStyle, name, stat
     ctx.textAlign = 'center'
     ctx.fillText(name, petX, groundY + 20)
     ctx.textAlign = 'start'
+
+    // 食碗
+    if (st.foodBowl > 0) {
+      const bowlX = petX + 30 * st.direction
+      ctx.fillStyle = '#DC2626'
+      ctx.beginPath()
+      ctx.ellipse(bowlX, groundY - 2, 12, 6, 0, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.fillStyle = '#7C2D12'
+      ctx.beginPath()
+      ctx.ellipse(bowlX, groundY - 4, 8, 4, 0, 0, Math.PI)
+      ctx.fill()
+    }
+
+    // 粒子
+    for (const p of st.particles) {
+      const alpha = p.life / p.maxLife
+      if (p.type === 'heart') {
+        ctx.fillStyle = `rgba(239,68,68,${alpha})`
+        ctx.font = `${10 + (1 - alpha) * 6}px sans-serif`
+        ctx.fillText('❤', p.x * w, p.y * h)
+      } else if (p.type === 'star') {
+        ctx.fillStyle = `rgba(251,191,36,${alpha})`
+        ctx.font = `${8 + (1 - alpha) * 4}px sans-serif`
+        ctx.fillText('✨', p.x * w, p.y * h)
+      }
+    }
 
     // 状态气泡
     if (showBubble && statusText) {
@@ -745,14 +792,39 @@ export default function PixelPetEngine({ spiritType, mood, homeStyle, name, stat
 
     if (Math.abs(x - st.x) < 0.2) {
       if (y > 0.6) {
-        // 点击下方 = 喂食
+        // 喂食
         st.action = 'eat'
         st.actionTimer = 90
+        st.foodBowl = 120
+        // 星星粒子
+        for (let i = 0; i < 5; i++) {
+          st.particles.push({
+            x: st.x + (Math.random() - 0.5) * 0.1,
+            y: 0.55,
+            vx: (Math.random() - 0.5) * 0.003,
+            vy: -0.003 - Math.random() * 0.003,
+            life: 40 + Math.random() * 20,
+            maxLife: 60,
+            type: 'star',
+          })
+        }
         onInteract?.('feed')
       } else {
-        // 点击上方 = 抚摸
+        // 抚摸
         st.action = 'play'
         st.actionTimer = 60
+        // 爱心粒子
+        for (let i = 0; i < 6; i++) {
+          st.particles.push({
+            x: st.x + (Math.random() - 0.5) * 0.08,
+            y: 0.35 + Math.random() * 0.1,
+            vx: (Math.random() - 0.5) * 0.002,
+            vy: -0.004 - Math.random() * 0.003,
+            life: 50 + Math.random() * 30,
+            maxLife: 80,
+            type: 'heart',
+          })
+        }
         onInteract?.('pet')
       }
     }
