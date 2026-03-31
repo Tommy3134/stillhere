@@ -17,6 +17,28 @@ type ChatMessage = {
 const formatTime = () =>
   new Intl.DateTimeFormat('zh-CN', { hour: '2-digit', minute: '2-digit' }).format(new Date())
 
+function getGreeting(name?: string, tags?: string[]): string {
+  if (!tags || tags.length === 0) return '你来啦！我好想你~'
+  const greetings: Record<string, string[]> = {
+    '粘人': [`你终于来了！我等了好久好久`, `你怎么才来呀，我一直在门口等你`],
+    '贪吃': [`你来啦！有没有带好吃的~`, `闻到你的味道了！是不是带了零食？`],
+    '好奇': [`你来啦！我今天发现了一个好玩的地方`, `快来快来，我有新发现要告诉你！`],
+    '胆小': [`你来了...太好了，我刚才有点害怕`, `你在呀，那我就放心了`],
+    '调皮': [`嘿嘿，你来得正好，我刚干了件"好事"`, `哼哼，猜猜我今天又搞了什么`],
+    '安静': [`...你来了`, `嗯，坐吧`],
+    '活泼': [`哇你来啦！！今天好开心！`, `来了来了！我们玩什么？`],
+    '温柔': [`你来了呀，今天过得好吗？`, `看到你真好，坐下来陪我一会儿吧`],
+    '独立': [`哦，你来了`, `嗯，正好我也闲着`],
+    '霸道': [`哼，终于想起我了？`, `你怎么现在才来！`],
+  }
+  for (const tag of tags) {
+    if (greetings[tag]) {
+      return greetings[tag][Math.floor(Math.random() * greetings[tag].length)]
+    }
+  }
+  return '你来啦！我好想你~'
+}
+
 const createId = () =>
   typeof crypto !== 'undefined' && crypto.randomUUID
     ? crypto.randomUUID()
@@ -25,6 +47,7 @@ const createId = () =>
 interface SpiritInfo {
   name: string
   spiritType: string
+  tags?: string[]
 }
 
 export default function ChatPage({ params }: { params: { spiritId: string } }) {
@@ -37,17 +60,29 @@ export default function ChatPage({ params }: { params: { spiritId: string } }) {
 
   const spiritId = params.spiritId
 
-  // 加载分身信息
+  // 加载分身信息和聊天历史
   useEffect(() => {
     setLoading(true)
-    fetch(`/api/spirit?id=${spiritId}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.spirit) {
-          setSpiritInfo({ name: data.spirit.name, spiritType: data.spirit.spiritType })
+    Promise.all([
+      fetch(`/api/spirit?id=${spiritId}`).then(r => r.json()),
+      fetch(`/api/chat?spiritId=${spiritId}`).then(r => r.json()),
+    ])
+      .then(([spiritData, chatData]) => {
+        const personality = spiritData.spirit?.personality as { tags?: string[] } | null
+        if (spiritData.spirit) {
+          setSpiritInfo({ name: spiritData.spirit.name, spiritType: spiritData.spirit.spiritType, tags: personality?.tags })
+        }
+        if (chatData.messages && chatData.messages.length > 0) {
+          setMessages(chatData.messages.map((m: { id: string; role: string; content: string; createdAt: string }) => ({
+            id: m.id,
+            content: m.content,
+            role: m.role === 'spirit' ? 'spirit' : 'user',
+            timestamp: new Intl.DateTimeFormat('zh-CN', { hour: '2-digit', minute: '2-digit' }).format(new Date(m.createdAt)),
+          })))
+        } else {
           setMessages([{
             id: createId(),
-            content: `你来啦！我好想你~`,
+            content: getGreeting(spiritData.spirit?.name, personality?.tags),
             role: 'spirit',
             timestamp: formatTime(),
           }])

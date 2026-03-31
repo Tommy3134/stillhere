@@ -5,6 +5,26 @@ import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 import { extractMemory, buildMemoryContext } from '@/lib/memory'
 
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url)
+    const spiritId = searchParams.get('spiritId')
+    if (!spiritId) {
+      return new Response(JSON.stringify({ error: 'Missing spiritId' }), { status: 400, headers: { 'Content-Type': 'application/json' } })
+    }
+    const messages = await prisma.message.findMany({
+      where: { spiritId },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      select: { id: true, role: true, content: true, createdAt: true },
+    })
+    return new Response(JSON.stringify({ messages: messages.reverse() }), { headers: { 'Content-Type': 'application/json' } })
+  } catch (error) {
+    console.error('Get chat history error:', error)
+    return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500, headers: { 'Content-Type': 'application/json' } })
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
