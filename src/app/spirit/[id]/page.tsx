@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import SpiritScene from '@/components/SpiritScene'
+import PixelPetEngine from '@/components/PixelPetEngine'
 
 const MOOD_CONFIG: Record<string, { emoji: string; bg: string; label: string }> = {
   sleepy: { emoji: '💤', bg: 'bg-blue-100', label: '犯困' },
@@ -68,13 +68,12 @@ export default function SpiritPage({ params }: { params: { id: string } }) {
   return (
     <main className="min-h-screen bg-amber-50 pb-24">
       <div className="max-w-md mx-auto px-6 py-8">
-        {/* 分身场景 */}
-        <SpiritScene
-          name={spirit.name}
+        {/* 像素宠物场景 */}
+        <PixelPetEngine
           spiritType={spirit.spiritType}
           mood={mood as 'sleepy' | 'playful' | 'content' | 'curious' | 'happy'}
-          photoUrl={spirit.photoUrls?.[0]}
-          homeStyle={spirit.homeStyle}
+          homeStyle={spirit.homeStyle as 'cozy_room' | 'garden' | 'cloud_loft' | 'mountain_cabin'}
+          name={spirit.name}
           statusText={statusText}
         />
 
