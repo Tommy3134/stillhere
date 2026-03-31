@@ -12,6 +12,7 @@ interface PixelPetEngineProps {
   homeStyle: HomeStyle
   name: string
   statusText: string
+  decor?: string[]
   onInteract?: (type: 'pet' | 'feed') => void
 }
 
@@ -635,6 +636,42 @@ function drawBubble(ctx: CanvasRenderingContext2D, x: number, y: number, text: s
   ctx.textAlign = 'start'
 }
 
+// ===== 装饰物渲染 =====
+
+const DECOR_POSITIONS: Record<string, { x: number; y: number; size: number }> = {
+  cat_bed: { x: 0.15, y: 0.58, size: 20 },
+  food_bowl: { x: 0.82, y: 0.6, size: 16 },
+  toy_ball: { x: 0.7, y: 0.6, size: 14 },
+  cat_tree: { x: 0.9, y: 0.42, size: 24 },
+  fish_tank: { x: 0.12, y: 0.35, size: 20 },
+  cushion: { x: 0.35, y: 0.58, size: 18 },
+  plant: { x: 0.08, y: 0.45, size: 18 },
+  photo_frame: { x: 0.25, y: 0.2, size: 16 },
+  wind_chime: { x: 0.75, y: 0.12, size: 16 },
+  night_light: { x: 0.88, y: 0.5, size: 16 },
+  music_box: { x: 0.6, y: 0.58, size: 14 },
+  rainbow_bridge: { x: 0.5, y: 0.08, size: 28 },
+}
+
+const DECOR_ICONS: Record<string, string> = {
+  cat_bed: '\u{1F6CF}\uFE0F', food_bowl: '\u{1F37D}\uFE0F', toy_ball: '\u{1F9F6}',
+  cat_tree: '\u{1F3D7}\uFE0F', fish_tank: '\u{1F420}', cushion: '\u{1F6CB}\uFE0F',
+  plant: '\u{1FAB4}', photo_frame: '\u{1F5BC}\uFE0F', wind_chime: '\u{1F390}',
+  night_light: '\u{1F52E}', music_box: '\u{1F3B5}', rainbow_bridge: '\u{1F308}',
+}
+
+function drawDecorItems(ctx: CanvasRenderingContext2D, w: number, h: number, decor: string[]) {
+  for (const key of decor) {
+    const pos = DECOR_POSITIONS[key]
+    const icon = DECOR_ICONS[key]
+    if (!pos || !icon) continue
+    ctx.font = `${pos.size}px sans-serif`
+    ctx.textAlign = 'center'
+    ctx.fillText(icon, pos.x * w, pos.y * h)
+  }
+  ctx.textAlign = 'start'
+}
+
 // ===== 主组件 =====
 
 const PET_COLORS: Record<string, string> = {
@@ -644,7 +681,7 @@ const PET_COLORS: Record<string, string> = {
   human: '#FBBF24',
 }
 
-export default function PixelPetEngine({ spiritType, mood, homeStyle, name, statusText, onInteract }: PixelPetEngineProps) {
+export default function PixelPetEngine({ spiritType, mood, homeStyle, name, statusText, decor, onInteract }: PixelPetEngineProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const stateRef = useRef<PetState>({
     x: 0.5, y: 0, action: 'idle', frame: 0, direction: 1, actionTimer: 0, zzz: 0, particles: [], foodBowl: 0,
@@ -710,6 +747,11 @@ export default function PixelPetEngine({ spiritType, mood, homeStyle, name, stat
 
     // 场景
     drawScene(ctx, w, h, homeStyle as HomeStyle, phase)
+
+    // 装饰物
+    if (decor && decor.length > 0) {
+      drawDecorItems(ctx, w, h, decor)
+    }
 
     // 宠物
     const petX = st.x * w

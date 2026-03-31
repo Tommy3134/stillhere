@@ -89,7 +89,7 @@ export default function SpiritPage({ params }: { params: { id: string } }) {
         <div className="grid grid-cols-4 gap-3 mb-8">
           {[
             { icon: '💬', label: '聊天', action: () => router.push(`/chat/${spirit.id}`) },
-            { icon: '🏠', label: '小屋', action: () => {} },
+            { icon: '🏠', label: '小屋', action: () => router.push(`/spirit/${spirit.id}/decor`) },
             { icon: '🙏', label: '祈福', action: () => router.push(`/spirit/${spirit.id}/bless`) },
             { icon: '👥', label: '邻居', action: () => setShowNeighbors(!showNeighbors) },
           ].map((item) => (

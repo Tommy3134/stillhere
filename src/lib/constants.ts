@@ -34,3 +34,19 @@ export const MOODS = {
   curious: '好奇',
   happy: '开心',
 } as const
+
+// 装饰物品
+export const DECOR_ITEMS = {
+  cat_bed: { name: '猫窝', icon: '🛏️', price: 0, category: 'furniture' },
+  food_bowl: { name: '食碗', icon: '🍽️', price: 0, category: 'furniture' },
+  toy_ball: { name: '毛线球', icon: '🧶', price: 0, category: 'toy' },
+  cat_tree: { name: '猫爬架', icon: '🏗️', price: 5, category: 'furniture' },
+  fish_tank: { name: '鱼缸', icon: '🐠', price: 8, category: 'furniture' },
+  cushion: { name: '靠垫', icon: '🛋️', price: 3, category: 'furniture' },
+  plant: { name: '绿植', icon: '🪴', price: 3, category: 'decor' },
+  photo_frame: { name: '相框', icon: '🖼️', price: 5, category: 'decor' },
+  wind_chime: { name: '风铃', icon: '🎐', price: 5, category: 'decor' },
+  night_light: { name: '小夜灯', icon: '🔮', price: 8, category: 'decor' },
+  music_box: { name: '音乐盒', icon: '🎵', price: 10, category: 'special' },
+  rainbow_bridge: { name: '彩虹桥', icon: '🌈', price: 20, category: 'special' },
+} as const

@@ -154,7 +154,7 @@ export default function CreatePage() {
                   <span className="text-xs mt-1">照片</span>
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
                     multiple
                     onChange={handlePhotoSelect}
                     className="hidden"
@@ -318,9 +318,12 @@ export default function CreatePage() {
                       spiritType: data.spirit.spiritType,
                       homeStyle: data.spirit.homeStyle,
                     })
+                  } else {
+                    alert(`创建失败: ${data.error || '未知错误'}`)
                   }
                 } catch (e) {
                   console.error(e)
+                  alert('创建失败，请检查网络连接后重试')
                 } finally {
                   setIsCreating(false)
                 }
