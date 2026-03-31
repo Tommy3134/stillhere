@@ -1,5 +1,7 @@
 'use client'
 
+import SpiritAvatarSVG from '@/components/SpiritAvatarSVG'
+
 interface ChatHeaderProps {
   name: string
   avatarEmoji?: string
@@ -7,17 +9,7 @@ interface ChatHeaderProps {
   onBack: () => void
 }
 
-function getEmoji(spiritType?: string) {
-  switch (spiritType) {
-    case 'pet_dog': return '🐶'
-    case 'pet_other': return '🐾'
-    case 'human': return '👤'
-    default: return '🐱'
-  }
-}
-
-export default function ChatHeader({ name, avatarEmoji, spiritType, onBack }: ChatHeaderProps) {
-  const emoji = avatarEmoji || getEmoji(spiritType)
+export default function ChatHeader({ name, spiritType, onBack }: ChatHeaderProps) {
   return (
     <header className="flex items-center justify-between px-4 py-3 bg-amber-100/80 backdrop-blur rounded-b-3xl shadow-sm">
       <button
@@ -31,8 +23,8 @@ export default function ChatHeader({ name, avatarEmoji, spiritType, onBack }: Ch
 
       <div className="flex flex-col items-center gap-1">
         <div className="relative">
-          <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-2xl shadow">
-            {emoji}
+          <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow overflow-hidden">
+            <SpiritAvatarSVG spiritType={spiritType || 'pet_cat'} mood="happy" size={44} />
           </div>
           <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 rounded-full border-2 border-white" />
         </div>

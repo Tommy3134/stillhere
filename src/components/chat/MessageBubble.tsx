@@ -1,19 +1,12 @@
 'use client'
 
+import SpiritAvatarSVG from '@/components/SpiritAvatarSVG'
+
 interface MessageBubbleProps {
   content: string
   role: 'user' | 'spirit'
   timestamp?: string
   spiritType?: string
-}
-
-function getEmoji(spiritType?: string) {
-  switch (spiritType) {
-    case 'pet_dog': return '🐶'
-    case 'pet_other': return '🐾'
-    case 'human': return '👤'
-    default: return '🐱'
-  }
 }
 
 export default function MessageBubble({ content, role, timestamp, spiritType }: MessageBubbleProps) {
@@ -22,8 +15,8 @@ export default function MessageBubble({ content, role, timestamp, spiritType }: 
     <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} animate-[fadeIn_0.3s_ease-in]`}>
       <div className={`flex gap-2 ${isUser ? 'flex-row-reverse' : ''}`}>
         {!isUser && (
-          <div className="w-8 h-8 rounded-full bg-white shadow flex items-center justify-center text-xl shrink-0">
-            {getEmoji(spiritType)}
+          <div className="w-8 h-8 rounded-full bg-white shadow flex items-center justify-center shrink-0 overflow-hidden">
+            <SpiritAvatarSVG spiritType={spiritType || 'pet_cat'} mood="content" size={30} />
           </div>
         )}
         <div
