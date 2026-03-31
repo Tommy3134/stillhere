@@ -1,9 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { SPIRIT_TYPES, PERSONALITY_TAGS, HOME_STYLES } from '@/lib/constants'
 import { useAuthFetch } from '@/lib/use-auth-fetch'
+import BirthAnimation from '@/components/BirthAnimation'
 import type { SpiritType } from '@/lib/constants'
 
 type Step = 1 | 2 | 3 | 4
@@ -19,9 +19,9 @@ export default function CreatePage() {
   const [funnyStory, setFunnyStory] = useState('')
   const [homeStyle, setHomeStyle] = useState('cozy_room')
   const [isCreating, setIsCreating] = useState(false)
+  const [birthData, setBirthData] = useState<{ id: string; name: string; spiritType: string; homeStyle: string } | null>(null)
   const [photos, setPhotos] = useState<File[]>([])
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([])
-  const router = useRouter()
 
   const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
@@ -54,6 +54,17 @@ export default function CreatePage() {
     if (step === 2) return true // 照片暂时可选
     if (step === 3) return selectedTags.length > 0
     return true
+  }
+
+  if (birthData) {
+    return (
+      <BirthAnimation
+        spiritId={birthData.id}
+        name={birthData.name}
+        spiritType={birthData.spiritType}
+        homeStyle={birthData.homeStyle}
+      />
+    )
   }
 
   return (
@@ -274,7 +285,12 @@ export default function CreatePage() {
                   })
                   const data = await res.json()
                   if (res.ok) {
-                    router.push(`/spirit/${data.spirit.id}`)
+                    setBirthData({
+                      id: data.spirit.id,
+                      name: data.spirit.name,
+                      spiritType: data.spirit.spiritType,
+                      homeStyle: data.spirit.homeStyle,
+                    })
                   }
                 } catch (e) {
                   console.error(e)
