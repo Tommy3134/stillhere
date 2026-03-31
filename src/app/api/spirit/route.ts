@@ -95,19 +95,23 @@ export async function POST(req: NextRequest) {
     })
 
     // 异步mint NFT（不阻塞响应）
-    const ownerAddress = '0x' + (await import('viem/accounts')).privateKeyToAccount(
-      `0x${process.env.BASE_SEPOLIA_PRIVATE_KEY}` as `0x${string}`
-    ).address.slice(2)
+    try {
+      const ownerAddress = '0x' + (await import('viem/accounts')).privateKeyToAccount(
+        `0x${process.env.BASE_SEPOLIA_PRIVATE_KEY}` as `0x${string}`
+      ).address.slice(2)
 
-    mintSpiritNFT(ownerAddress, name, spiritType, '').then(async (tokenId) => {
-      if (tokenId) {
-        await prisma.spirit.update({
-          where: { id: spirit.id },
-          data: { tokenId },
-        })
-        console.log(`NFT minted for spirit ${spirit.id}, tokenId: ${tokenId}`)
-      }
-    }).catch(err => console.error('NFT mint background error:', err))
+      mintSpiritNFT(ownerAddress, name, spiritType, '').then(async (tokenId) => {
+        if (tokenId) {
+          await prisma.spirit.update({
+            where: { id: spirit.id },
+            data: { tokenId },
+          })
+          console.log(`NFT minted for spirit ${spirit.id}, tokenId: ${tokenId}`)
+        }
+      }).catch(err => console.error('NFT mint background error:', err))
+    } catch (err) {
+      console.error('NFT mint setup skipped:', err)
+    }
 
     return NextResponse.json({ spirit: { ...spirit, systemPrompt } }, { status: 201 })
   } catch (error) {
