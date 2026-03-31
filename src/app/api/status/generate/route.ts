@@ -3,18 +3,48 @@ import { prisma } from '@/lib/prisma'
 import { buildStatusPrompt, inferMood } from '@/lib/ai-engine'
 import { SPIRIT_TYPES } from '@/lib/constants'
 
-const FALLBACK_STATUSES = [
-  '趴在窗台看外面的蝴蝶',
-  '在厨房转悠，好像闻到了好吃的',
-  '追着自己的尾巴转圈圈',
-  '找到了一个纸箱子，钻进去了',
-  '在阳光下翻肚皮晒太阳',
-  '偷偷跑到隔壁串门去了',
-  '窝在沙发上打盹',
-  '蹲在门口等家人回来',
-  '发现了一只小虫子，盯着看了半天',
-  '在花园里追蝴蝶',
-]
+const FALLBACK_STATUSES: Record<string, string[]> = {
+  pet_cat: [
+    '趴在窗台看外面的蝴蝶',
+    '在厨房转悠，好像闻到了好吃的',
+    '追着自己的尾巴转圈圈',
+    '找到了一个纸箱子，钻进去了',
+    '在阳光下翻肚皮晒太阳',
+    '窝在沙发上打盹',
+    '蹲在门口等家人回来',
+    '发现了一只小虫子，盯着看了半天',
+    '在花园里追蝴蝶',
+    '把桌上的杯子推到了边缘，看着它摇晃',
+  ],
+  pet_dog: [
+    '叼着球在花园里跑来跑去',
+    '趴在门口等家人回来，尾巴时不时摇一下',
+    '在草地上打滚，开心得不行',
+    '闻到了好吃的味道，鼻子一直动',
+    '和邻居家的狗隔着篱笆对望',
+    '在阳光下伸了个大懒腰',
+    '把骨头埋在花园里，然后忘了埋在哪',
+    '听到什么声音，竖起耳朵警觉地看',
+    '在沙发上占了最好的位置，不肯让',
+    '梦里跑步，爪子在动',
+  ],
+  pet_other: [
+    '安静地待在自己的小窝里',
+    '好奇地看着窗外的风景',
+    '在角落里找到了好玩的东西',
+    '吃完饭满足地眯起了眼睛',
+    '在彼岸世界探索新地方',
+    '和新朋友一起晒太阳',
+  ],
+  human: [
+    '在花园里散步，看着远处的山',
+    '坐在窗边看书，偶尔抬头看看天',
+    '在厨房里做了一道拿手菜',
+    '和邻居聊了会儿天，笑了好几次',
+    '整理了一下房间，把照片摆得整整齐齐',
+    '在阳台上喝茶，看夕阳',
+  ],
+}
 
 const NEIGHBOR_TEMPLATES = [
   '去隔壁找{name}玩了一会儿',
@@ -65,14 +95,15 @@ async function generateWithAI(
   return data.content?.[0]?.text?.trim() || ''
 }
 
-function pickFallback(neighbors?: string[]): string {
+function pickFallback(spiritType: string, neighbors?: string[]): string {
   // 30%概率生成邻居互动状态
   if (neighbors && neighbors.length > 0 && Math.random() < 0.3) {
     const template = NEIGHBOR_TEMPLATES[Math.floor(Math.random() * NEIGHBOR_TEMPLATES.length)]
     const neighbor = neighbors[Math.floor(Math.random() * neighbors.length)]
     return template.replace('{name}', neighbor)
   }
-  return FALLBACK_STATUSES[Math.floor(Math.random() * FALLBACK_STATUSES.length)]
+  const pool = FALLBACK_STATUSES[spiritType] || FALLBACK_STATUSES.pet_other
+  return pool[Math.floor(Math.random() * pool.length)]
 }
 
 export async function GET() {
@@ -138,13 +169,13 @@ async function handleGenerate() {
             },
             apiKey,
           )
-          if (!content) content = pickFallback(neighbors)
+          if (!content) content = pickFallback(spirit.spiritType, neighbors)
         } catch (err) {
           console.error(`AI generation failed for spirit ${spirit.id}:`, err)
-          content = pickFallback(neighbors)
+          content = pickFallback(spirit.spiritType, neighbors)
         }
       } else {
-        content = pickFallback(neighbors)
+        content = pickFallback(spirit.spiritType, neighbors)
       }
 
       const mood = inferMood(content)
