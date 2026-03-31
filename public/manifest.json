@@ -1,0 +1,12 @@
+{
+  "name": "仍在 StillHere",
+  "short_name": "仍在",
+  "description": "它们没有离开，只是去了另一个地方",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#fffbeb",
+  "theme_color": "#d97706",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "target": "es2019",
+    "module": "commonjs",
+    "strict": true,
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": false,
+    "types": ["node", "mocha"],
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "outDir": "./dist"
+  },
+  "include": ["hardhat.config.ts", "scripts", "test", "typechain"],
+  "files": ["./hardhat.config.ts"],
+  "ts-node": {
+    "swc": false
+  }
+}
