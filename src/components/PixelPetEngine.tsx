@@ -383,6 +383,171 @@ function drawCat(ctx: CanvasRenderingContext2D, x: number, y: number, state: Pet
 
 /* Helper drawing functions */
 
+function drawDog(ctx: CanvasRenderingContext2D, x: number, y: number, state: PetState, scale: number, color: string) {
+  const s = scale
+  const dir = state.direction
+  const frame = state.frame
+
+  ctx.save()
+  ctx.translate(x, y)
+  if (dir === -1) ctx.scale(-1, 1)
+
+  if (state.action === 'sleep') {
+    // 趴着的狗
+    ctx.fillStyle = color
+    ctx.beginPath()
+    ctx.ellipse(0, 0, s * 22, s * 10, 0, 0, Math.PI * 2)
+    ctx.fill()
+    // 头
+    ctx.beginPath()
+    ctx.arc(-s * 16, -s * 4, s * 10, 0, Math.PI * 2)
+    ctx.fill()
+    // 垂耳
+    ctx.fillStyle = darkenColor(color)
+    ctx.beginPath()
+    ctx.ellipse(-s * 24, -s * 2, s * 5, s * 10, -0.2, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.beginPath()
+    ctx.ellipse(-s * 8, -s * 2, s * 5, s * 10, 0.2, 0, Math.PI * 2)
+    ctx.fill()
+    // 闭眼
+    ctx.strokeStyle = '#333'
+    ctx.lineWidth = s * 1.5
+    ctx.beginPath()
+    ctx.arc(-s * 19, -s * 5, s * 3, 0.2, Math.PI - 0.2)
+    ctx.stroke()
+    ctx.beginPath()
+    ctx.arc(-s * 12, -s * 5, s * 3, 0.2, Math.PI - 0.2)
+    ctx.stroke()
+    // 鼻子
+    ctx.fillStyle = '#333'
+    ctx.beginPath()
+    ctx.ellipse(-s * 15, -s * 1, s * 2.5, s * 2, 0, 0, Math.PI * 2)
+    ctx.fill()
+    // 尾巴
+    ctx.fillStyle = color
+    ctx.beginPath()
+    ctx.ellipse(s * 20, -s * 4, s * 6, s * 3, 0, 0, Math.PI * 2)
+    ctx.fill()
+    // ZZZ
+    if (state.zzz > 0) {
+      ctx.fillStyle = 'rgba(100,100,255,0.6)'
+      ctx.font = `${s * 8}px sans-serif`
+      const zy = -s * 16 - Math.sin(Date.now() / 500) * s * 5
+      ctx.fillText('z', -s * 5, zy)
+    }
+  } else {
+    const bounce = state.action === 'walk' ? Math.sin(frame * 0.3) * s * 2 : 0
+    const playBounce = state.action === 'play' ? Math.abs(Math.sin(frame * 0.4)) * s * 5 : 0
+
+    // 身体
+    ctx.fillStyle = color
+    ctx.beginPath()
+    ctx.ellipse(0, -bounce - playBounce, s * 16, s * 11, 0, 0, Math.PI * 2)
+    ctx.fill()
+
+    // 腿
+    const legAnim = state.action === 'walk' ? Math.sin(frame * 0.3) * s * 3 : 0
+    ctx.fillStyle = color
+    ctx.fillRect(-s * 10 + legAnim, s * 6 - bounce - playBounce, s * 5, s * 9)
+    ctx.fillRect(s * 5 - legAnim, s * 6 - bounce - playBounce, s * 5, s * 9)
+    ctx.fillStyle = '#333'
+    ctx.fillRect(-s * 10 + legAnim, s * 13 - bounce - playBounce, s * 6, s * 2)
+    ctx.fillRect(s * 5 - legAnim, s * 13 - bounce - playBounce, s * 6, s * 2)
+
+    // 头
+    const headY = -s * 18 - bounce - playBounce
+    ctx.fillStyle = color
+    ctx.beginPath()
+    ctx.arc(0, headY, s * 12, 0, Math.PI * 2)
+    ctx.fill()
+    // 嘴部突出
+    ctx.beginPath()
+    ctx.ellipse(0, headY + s * 6, s * 7, s * 5, 0, 0, Math.PI * 2)
+    ctx.fill()
+
+    // 垂耳
+    ctx.fillStyle = darkenColor(color)
+    ctx.beginPath()
+    ctx.ellipse(-s * 10, headY + s * 2, s * 5, s * 12, -0.15, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.beginPath()
+    ctx.ellipse(s * 10, headY + s * 2, s * 5, s * 12, 0.15, 0, Math.PI * 2)
+    ctx.fill()
+
+    // 眼睛
+    ctx.fillStyle = '#FFF'
+    ctx.beginPath()
+    ctx.arc(-s * 4, headY - s * 2, s * 3.5, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.beginPath()
+    ctx.arc(s * 4, headY - s * 2, s * 3.5, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.fillStyle = '#333'
+    ctx.beginPath()
+    ctx.arc(-s * 3.5, headY - s * 1.5, s * 2, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.beginPath()
+    ctx.arc(s * 4.5, headY - s * 1.5, s * 2, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.fillStyle = '#FFF'
+    ctx.beginPath()
+    ctx.arc(-s * 3, headY - s * 2.5, s * 0.8, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.beginPath()
+    ctx.arc(s * 5, headY - s * 2.5, s * 0.8, 0, Math.PI * 2)
+    ctx.fill()
+
+    // 鼻子
+    ctx.fillStyle = '#333'
+    ctx.beginPath()
+    ctx.ellipse(0, headY + s * 4, s * 3, s * 2.5, 0, 0, Math.PI * 2)
+    ctx.fill()
+
+    // 嘴
+    ctx.strokeStyle = '#333'
+    ctx.lineWidth = s * 0.8
+    ctx.beginPath()
+    ctx.moveTo(0, headY + s * 6)
+    ctx.lineTo(-s * 3, headY + s * 8)
+    ctx.stroke()
+    ctx.beginPath()
+    ctx.moveTo(0, headY + s * 6)
+    ctx.lineTo(s * 3, headY + s * 8)
+    ctx.stroke()
+
+    // 舌头（playful/happy）
+    if (state.action === 'play' || state.action === 'eat') {
+      ctx.fillStyle = '#F87171'
+      ctx.beginPath()
+      ctx.ellipse(s * 2, headY + s * 9, s * 2.5, s * 4, 0.1, 0, Math.PI * 2)
+      ctx.fill()
+    }
+
+    // 尾巴（摇）
+    ctx.strokeStyle = color
+    ctx.lineWidth = s * 3.5
+    ctx.lineCap = 'round'
+    ctx.beginPath()
+    ctx.moveTo(s * 14, -s * 6 - bounce)
+    const tailWag = Math.sin(frame * 0.4) * s * 8
+    ctx.quadraticCurveTo(s * 22, -s * 16 - bounce + tailWag, s * 18, -s * 24 - bounce)
+    ctx.stroke()
+  }
+
+  ctx.restore()
+}
+
+function darkenColor(hex: string): string {
+  // 简单变暗
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  return `rgb(${Math.max(0, r - 35)},${Math.max(0, g - 35)},${Math.max(0, b - 35)})`
+}
+
+/* Original helper drawing functions */
+
 function drawFlower(ctx: CanvasRenderingContext2D, x: number, y: number, color: string) {
   ctx.fillStyle = '#22C55E'
   ctx.fillRect(x - 1, y, 2, 12)
@@ -531,7 +696,11 @@ export default function PixelPetEngine({ spiritType, mood, homeStyle, name, stat
     const groundY = h * 0.65
     const petY = groundY - 5
     const color = PET_COLORS[spiritType] || '#F59E0B'
-    drawCat(ctx, petX, petY, st, 1.8, color)
+    if (spiritType === 'pet_dog') {
+      drawDog(ctx, petX, petY, st, 1.8, color)
+    } else {
+      drawCat(ctx, petX, petY, st, 1.8, color)
+    }
 
     // 名字
     ctx.fillStyle = 'rgba(255,255,255,0.8)'
@@ -567,16 +736,25 @@ export default function PixelPetEngine({ spiritType, mood, homeStyle, name, stat
   }, [update, draw])
 
   const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!onInteract) return
     const canvas = canvasRef.current
     if (!canvas) return
     const rect = canvas.getBoundingClientRect()
     const x = (e.clientX - rect.left) / rect.width
+    const y = (e.clientY - rect.top) / rect.height
     const st = stateRef.current
-    if (Math.abs(x - st.x) < 0.15) {
-      onInteract('pet')
-      st.action = 'play'
-      st.actionTimer = 60
+
+    if (Math.abs(x - st.x) < 0.2) {
+      if (y > 0.6) {
+        // 点击下方 = 喂食
+        st.action = 'eat'
+        st.actionTimer = 90
+        onInteract?.('feed')
+      } else {
+        // 点击上方 = 抚摸
+        st.action = 'play'
+        st.actionTimer = 60
+        onInteract?.('pet')
+      }
     }
   }
 

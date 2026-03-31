@@ -2,6 +2,8 @@ import { NextRequest } from 'next/server'
 import { sendMessageSchema } from '@/lib/validations'
 import { buildSpiritSystemPrompt } from '@/lib/ai-engine'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
+import { extractMemory, buildMemoryContext } from '@/lib/memory'
 
 export async function POST(req: NextRequest) {
   try {
@@ -26,12 +28,13 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const personality = spirit.personality as { tags: string[]; habits?: string; funnyStory?: string }
+    const personality = spirit.personality as { tags: string[]; habits?: string; funnyStory?: string; memory?: Record<string, unknown> }
+    const memoryContext = buildMemoryContext(personality.memory as Parameters<typeof buildMemoryContext>[0])
     const systemPrompt = buildSpiritSystemPrompt({
       name: spirit.name,
       spiritType: spirit.spiritType as 'pet_cat' | 'pet_dog' | 'pet_other' | 'human',
       personality,
-    })
+    }) + memoryContext
 
     // 保存用户消息到数据库
     await prisma.message.create({
@@ -134,6 +137,24 @@ export async function POST(req: NextRequest) {
           await prisma.message.create({
             data: { spiritId: sid, userId, role: 'spirit', content: fullReply },
           })
+
+          // 异步提取记忆，不阻塞响应
+          const memMessages = recentHistory
+            .map((msg: { role: string; content: string }) => ({ role: msg.role, content: msg.content }))
+            .concat([{ role: 'spirit', content: fullReply }])
+          extractMemory(memMessages, personality.memory as Parameters<typeof extractMemory>[1])
+            .then(async (newMemory) => {
+              try {
+                const updatedPersonality = { ...personality, memory: newMemory }
+                await prisma.spirit.update({
+                  where: { id: sid },
+                  data: { personality: updatedPersonality as unknown as Prisma.InputJsonValue },
+                })
+              } catch (e) {
+                console.error('Memory save failed:', e)
+              }
+            })
+            .catch((e) => console.error('Memory extraction error:', e))
 
           controller.enqueue(encoder.encode('data: [DONE]\n\n'))
           controller.close()
