@@ -11,9 +11,18 @@ const FALLBACK_STATUSES = [
   '在阳光下翻肚皮晒太阳',
   '偷偷跑到隔壁串门去了',
   '窝在沙发上打盹',
-  '去隔壁找花花玩了一会儿',
   '蹲在门口等家人回来',
   '发现了一只小虫子，盯着看了半天',
+  '在花园里追蝴蝶',
+]
+
+const NEIGHBOR_TEMPLATES = [
+  '去隔壁找{name}玩了一会儿',
+  '和{name}一起在花园里晒太阳',
+  '跟{name}抢了一个纸箱子',
+  '和{name}并排趴在窗台上看风景',
+  '偷偷去{name}家蹭了顿饭',
+  '{name}来串门了，两个小家伙玩得很开心',
 ]
 
 interface PersonalityData {
@@ -56,7 +65,13 @@ async function generateWithAI(
   return data.content?.[0]?.text?.trim() || ''
 }
 
-function pickFallback(): string {
+function pickFallback(neighbors?: string[]): string {
+  // 30%概率生成邻居互动状态
+  if (neighbors && neighbors.length > 0 && Math.random() < 0.3) {
+    const template = NEIGHBOR_TEMPLATES[Math.floor(Math.random() * NEIGHBOR_TEMPLATES.length)]
+    const neighbor = neighbors[Math.floor(Math.random() * neighbors.length)]
+    return template.replace('{name}', neighbor)
+  }
   return FALLBACK_STATUSES[Math.floor(Math.random() * FALLBACK_STATUSES.length)]
 }
 
@@ -72,7 +87,7 @@ async function handleGenerate() {
   try {
     const spirits = await prisma.spirit.findMany({
       where: { isActive: true },
-      select: { id: true, name: true, spiritType: true, personality: true },
+      select: { id: true, name: true, spiritType: true, personality: true, homeStyle: true },
     })
 
     if (spirits.length === 0) {
@@ -108,6 +123,11 @@ async function handleGenerate() {
         continue
       }
 
+      // 查找邻居（同homeStyle的其他分身）
+      const neighbors = spirits
+        .filter(s => s.id !== spirit.id && s.homeStyle === spirit.homeStyle)
+        .map(s => s.name)
+
       if (apiKey) {
         try {
           content = await generateWithAI(
@@ -118,13 +138,13 @@ async function handleGenerate() {
             },
             apiKey,
           )
-          if (!content) content = pickFallback()
+          if (!content) content = pickFallback(neighbors)
         } catch (err) {
           console.error(`AI generation failed for spirit ${spirit.id}:`, err)
-          content = pickFallback()
+          content = pickFallback(neighbors)
         }
       } else {
-        content = pickFallback()
+        content = pickFallback(neighbors)
       }
 
       const mood = inferMood(content)

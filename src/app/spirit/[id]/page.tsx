@@ -33,12 +33,15 @@ export default function SpiritPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const [spirit, setSpirit] = useState<Spirit | null>(null)
   const [loading, setLoading] = useState(true)
+  const [neighbors, setNeighbors] = useState<Array<{ id: string; name: string; spiritType: string; photoUrls: string[] }>>([])
+  const [showNeighbors, setShowNeighbors] = useState(false)
 
   useEffect(() => {
     fetch(`/api/spirit?id=${params.id}`)
       .then(res => res.json())
       .then(data => {
         if (data.spirit) setSpirit(data.spirit)
+        if (data.neighbors) setNeighbors(data.neighbors)
       })
       .catch(console.error)
       .finally(() => setLoading(false))
@@ -88,7 +91,7 @@ export default function SpiritPage({ params }: { params: { id: string } }) {
             { icon: '💬', label: '聊天', action: () => router.push(`/chat/${spirit.id}`) },
             { icon: '🏠', label: '小屋', action: () => {} },
             { icon: '🙏', label: '祈福', action: () => router.push(`/spirit/${spirit.id}/bless`) },
-            { icon: '👥', label: '邻居', action: () => {} },
+            { icon: '👥', label: '邻居', action: () => setShowNeighbors(!showNeighbors) },
           ].map((item) => (
             <button
               key={item.label}
@@ -100,6 +103,40 @@ export default function SpiritPage({ params }: { params: { id: string } }) {
             </button>
           ))}
         </div>
+
+        {/* 邻居列表 */}
+        {showNeighbors && (
+          <div className="mb-8 animate-fade-in">
+            <h2 className="text-sm text-stone-400 mb-3">
+              {neighbors.length > 0 ? '彼岸世界的邻居们' : '附近还没有邻居'}
+            </h2>
+            {neighbors.length > 0 ? (
+              <div className="grid grid-cols-3 gap-3">
+                {neighbors.map(n => {
+                  const emoji = n.spiritType === 'pet_cat' ? '🐱' : n.spiritType === 'pet_dog' ? '🐶' : n.spiritType === 'human' ? '👤' : '🐾'
+                  return (
+                    <button
+                      key={n.id}
+                      onClick={() => router.push(`/spirit/${n.id}`)}
+                      className="flex flex-col items-center gap-1 py-3 bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center overflow-hidden">
+                        {n.photoUrls?.[0] ? (
+                          <img src={n.photoUrls[0]} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-lg">{emoji}</span>
+                        )}
+                      </div>
+                      <span className="text-xs text-stone-600">{n.name}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            ) : (
+              <p className="text-xs text-stone-400 text-center py-4">创建更多分身，它们就会成为邻居</p>
+            )}
+          </div>
+        )}
 
         {/* 照片相册 */}
         {spirit.photoUrls?.length > 1 && (

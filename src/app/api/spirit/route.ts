@@ -20,7 +20,15 @@ export async function GET(req: NextRequest) {
       if (!spirit) {
         return NextResponse.json({ error: 'Spirit not found' }, { status: 404 })
       }
-      return NextResponse.json({ spirit })
+
+      // 查找邻居（同homeStyle的其他分身）
+      const neighbors = await prisma.spirit.findMany({
+        where: { homeStyle: spirit.homeStyle, id: { not: spirit.id }, isActive: true },
+        select: { id: true, name: true, spiritType: true, photoUrls: true },
+        take: 6,
+      })
+
+      return NextResponse.json({ spirit, neighbors })
     }
 
     // 列出所有分身
