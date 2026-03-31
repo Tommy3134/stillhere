@@ -50,9 +50,17 @@ export default function Home() {
           </p>
         </div>
 
-        {/* 动画占位 - 后续替换为真实动画 */}
-        <div className="w-48 h-48 mx-auto rounded-full bg-amber-100 flex items-center justify-center">
-          <span className="text-6xl">🐱</span>
+        {/* 动画展示 */}
+        <div className="relative w-48 h-48 mx-auto">
+          <div className="absolute inset-0 rounded-full bg-amber-200/30 animate-ping" style={{ animationDuration: '3s' }} />
+          <div className="absolute inset-2 rounded-full bg-amber-100/50 animate-pulse" style={{ animationDuration: '2s' }} />
+          <div className="relative w-full h-full rounded-full bg-amber-100 flex items-center justify-center">
+            <span className="text-6xl animate-bounce" style={{ animationDuration: '3s' }}>
+              {displaySpirits.length > 0
+                ? (SPIRIT_EMOJI[displaySpirits[0].spiritType] || '🐾')
+                : '🐱'}
+            </span>
+          </div>
         </div>
 
         {/* CTA按钮 */}

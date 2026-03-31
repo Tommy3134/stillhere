@@ -124,10 +124,16 @@ export default async function SharePage({ params }: Props) {
         )}
 
         {/* CTA */}
-        <div className="pt-4 text-center">
+        <div className="pt-4 space-y-3 text-center">
+          <Link
+            href={`/spirit/${spirit.id}/bless`}
+            className="inline-block py-3 px-8 bg-amber-600 text-white rounded-full hover:bg-amber-700 transition-colors"
+          >
+            🕯️ 为{spirit.name}点一盏灯
+          </Link>
           <Link
             href="/"
-            className="inline-block py-3 px-8 bg-amber-600 text-white rounded-full hover:bg-amber-700 transition-colors"
+            className="block py-3 px-8 border border-stone-300 text-stone-600 rounded-full hover:bg-stone-100 transition-colors"
           >
             为你的TA创建一个新家
           </Link>
