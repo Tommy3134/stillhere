@@ -35,6 +35,7 @@ export default function SpiritPage({ params }: { params: { id: string } }) {
   const [loading, setLoading] = useState(true)
   const [neighbors, setNeighbors] = useState<Array<{ id: string; name: string; spiritType: string; photoUrls: string[] }>>([])
   const [showNeighbors, setShowNeighbors] = useState(false)
+  const [viewPhoto, setViewPhoto] = useState<string | null>(null)
 
   useEffect(() => {
     fetch(`/api/spirit?id=${params.id}`)
@@ -140,16 +141,23 @@ export default function SpiritPage({ params }: { params: { id: string } }) {
         )}
 
         {/* 照片相册 */}
-        {spirit.photoUrls?.length > 1 && (
+        {spirit.photoUrls?.length > 0 && (
           <div className="mb-8">
             <h2 className="text-sm text-stone-400 mb-3">回忆相册</h2>
             <div className="grid grid-cols-3 gap-2">
               {spirit.photoUrls.map((url, i) => (
-                <div key={i} className="aspect-square rounded-xl overflow-hidden">
-                  <img src={url} alt="" className="w-full h-full object-cover" />
-                </div>
+                <button key={i} onClick={() => setViewPhoto(url)} className="aspect-square rounded-xl overflow-hidden">
+                  <img src={url} alt="" className="w-full h-full object-cover hover:scale-105 transition-transform" />
+                </button>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* 照片查看器 */}
+        {viewPhoto && (
+          <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-6" onClick={() => setViewPhoto(null)}>
+            <img src={viewPhoto} alt="" className="max-w-full max-h-full rounded-2xl object-contain" />
           </div>
         )}
 
