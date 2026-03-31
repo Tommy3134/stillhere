@@ -23,7 +23,7 @@ interface Spirit {
   id: string
   name: string
   spiritType: string
-  personality: { tags: string[]; habits?: string; funnyStory?: string }
+  personality: { tags: string[]; habits?: string; funnyStory?: string; decor?: string[] }
   homeStyle: string
   photoUrls: string[]
   statuses: SpiritStatus[]
@@ -78,6 +78,7 @@ export default function SpiritPage({ params }: { params: { id: string } }) {
           homeStyle={spirit.homeStyle as 'cozy_room' | 'garden' | 'cloud_loft' | 'mountain_cabin'}
           name={spirit.name}
           statusText={statusText}
+          decor={spirit.personality?.decor}
         />
 
         <div className="flex items-center justify-center gap-2 mt-4 mb-6">
