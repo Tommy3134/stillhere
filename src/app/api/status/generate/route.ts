@@ -84,6 +84,29 @@ async function handleGenerate() {
 
     for (const spirit of spirits) {
       let content: string
+      const personality = spirit.personality as unknown as PersonalityData & { birthday?: string; passedDate?: string }
+
+      // 检查特殊日期
+      const today = new Date()
+      const mmdd = `${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+      const isBirthday = personality.birthday && personality.birthday.slice(5) === mmdd
+      const isMemorialDay = personality.passedDate && personality.passedDate.slice(5) === mmdd
+
+      if (isBirthday) {
+        content = `今天是${spirit.name}的生日！在彼岸世界收到了好多祝福，开心地转圈圈`
+        const mood = 'happy'
+        await prisma.spiritStatus.create({ data: { spiritId: spirit.id, content, mood } })
+        results.push({ spiritId: spirit.id, content, mood })
+        continue
+      }
+
+      if (isMemorialDay) {
+        content = `今天是特别的日子。${spirit.name}安静地坐在窗边，望着远方，好像在等谁回来`
+        const mood = 'content'
+        await prisma.spiritStatus.create({ data: { spiritId: spirit.id, content, mood } })
+        results.push({ spiritId: spirit.id, content, mood })
+        continue
+      }
 
       if (apiKey) {
         try {

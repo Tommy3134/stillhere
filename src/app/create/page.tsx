@@ -18,6 +18,8 @@ export default function CreatePage() {
   const [habits, setHabits] = useState('')
   const [funnyStory, setFunnyStory] = useState('')
   const [homeStyle, setHomeStyle] = useState('cozy_room')
+  const [birthday, setBirthday] = useState('')
+  const [passedDate, setPassedDate] = useState('')
   const [isCreating, setIsCreating] = useState(false)
   const [birthData, setBirthData] = useState<{ id: string; name: string; spiritType: string; homeStyle: string } | null>(null)
   const [photos, setPhotos] = useState<File[]>([])
@@ -242,6 +244,31 @@ export default function CreatePage() {
                 )
               })}
             </div>
+
+            {/* 特殊日期 */}
+            <div className="space-y-3 pt-4">
+              <h3 className="text-sm text-stone-500">记住重要的日子（选填）</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-stone-400 block mb-1">生日</label>
+                  <input
+                    type="date"
+                    value={birthday}
+                    onChange={e => setBirthday(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-stone-200 text-sm text-stone-600 focus:outline-none focus:border-amber-400"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-stone-400 block mb-1">离开的日子</label>
+                  <input
+                    type="date"
+                    value={passedDate}
+                    onChange={e => setPassedDate(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-stone-200 text-sm text-stone-600 focus:outline-none focus:border-amber-400"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -278,7 +305,7 @@ export default function CreatePage() {
                     body: JSON.stringify({
                       name,
                       spiritType,
-                      personality: { tags: selectedTags, habits, funnyStory },
+                      personality: { tags: selectedTags, habits, funnyStory, birthday: birthday || undefined, passedDate: passedDate || undefined },
                       homeStyle,
                       photoUrls,
                     }),
