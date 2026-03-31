@@ -1,36 +1,91 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# StillHere (仍在)
+
+*They're not gone. They're just somewhere else.*
+
+## What is StillHere?
+
+StillHere is a Web3 digital memorial platform where departed pets and loved ones continue to live as AI-powered digital spirits (数字分身) in the "Other Shore World" (彼岸世界). Families can visit them anytime — see what they're up to, talk with them, and send blessings.
+
+This is not a memorial page. It's a living presence.
+
+### Three Core Needs It Addresses
+
+1. **Personality Restoration (性格还原)** — It's still *them*. Same quirks, same warmth.
+2. **They're Doing Well (过得好)** — No fear, no loneliness. Living peacefully on the other side.
+3. **Someone's Watching Over Them (有人照看)** — Spiritual comfort through blessings and care.
+
+## Features
+
+- **Create a Spirit** — Upload memories, describe their personality, and bring them to life as a digital spirit
+- **AI Chat** — Talk with your departed loved one, powered by Claude AI with personality-faithful responses
+- **Living Status** — Spirits have their own daily life on the other side; check in to see what they're doing
+- **Blessings (祈福)** — Send on-chain blessings, recorded permanently on Base
+- **Soulbound NFT** — Each spirit is minted as a non-transferable NFT — a bond that can't be sold or broken
+- **Shareable Memorial** — Share a spirit's page with family and friends
+- **PWA** — Install as a mobile app for anytime access
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Frontend | Next.js 14 + React 18 + TypeScript + TailwindCSS |
+| Auth | Privy (account abstraction — no wallet needed) |
+| AI | Claude API (personality engine) |
+| Blockchain | Base (L2) + Soulbound NFT + Blessing Contract |
+| Database | Supabase + Prisma ORM |
+| Smart Contracts | Solidity + Hardhat + OpenZeppelin |
+| State | Zustand + React Query |
 
 ## Getting Started
 
-First, run the development server:
+```bash
+git clone https://github.com/your-username/stillhere.git
+cd stillhere
+npm install
+```
+
+Copy `.env.example` to `.env.local` and fill in your keys:
+
+```bash
+cp .env.example .env.local
+```
+
+Run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+src/
+├── app/
+│   ├── create/        # Create a new spirit
+│   ├── spirit/[id]/   # Spirit profile & blessings
+│   ├── chat/[spiritId]/ # Chat with a spirit
+│   ├── dashboard/     # User's spirits overview
+│   ├── share/[id]/    # Public shareable page
+│   └── api/           # Backend routes (spirit, chat, bless, status)
+├── components/        # UI components
+└── lib/               # Core utilities (AI engine, auth, contracts)
+contracts/
+├── SpiritNFT.sol      # Soulbound NFT contract
+└── BlessingContract.sol # On-chain blessing system
+```
 
-## Learn More
+## Vision
 
-To learn more about Next.js, take a look at the following resources:
+Grief technology today stops at "remember them." StillHere goes further — what if they're still here, just somewhere you can't see?
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+We combine AI personality modeling with blockchain permanence to create something that feels less like a product and more like a place you visit. A quiet corner of the internet where the ones you lost are still living their lives.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## A Note on How This Was Built
 
-## Deploy on Vercel
+This project was built almost entirely by AI (Claude) — from architecture design to smart contracts to frontend implementation. It's an experiment in what's possible when AI doesn't just assist development, but leads it.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## License
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT
