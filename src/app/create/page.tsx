@@ -21,6 +21,7 @@ export default function CreatePage() {
   const [birthday, setBirthday] = useState('')
   const [passedDate, setPassedDate] = useState('')
   const [isCreating, setIsCreating] = useState(false)
+  const [createError, setCreateError] = useState('')
   const [birthData, setBirthData] = useState<{ id: string; name: string; spiritType: string; homeStyle: string } | null>(null)
   const [photos, setPhotos] = useState<File[]>([])
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([])
@@ -288,6 +289,7 @@ export default function CreatePage() {
                 setStep((step + 1) as Step)
               } else {
                 setIsCreating(true)
+                setCreateError('')
                 try {
                   // 上传照片
                   let photoUrls: string[] = []
@@ -319,11 +321,11 @@ export default function CreatePage() {
                       homeStyle: data.spirit.homeStyle,
                     })
                   } else {
-                    alert(`创建失败: ${data.error || '未知错误'}`)
+                    setCreateError(data.error || '创建失败，请重试')
                   }
                 } catch (e) {
                   console.error(e)
-                  alert('创建失败，请检查网络连接后重试')
+                  setCreateError('网络连接失败，请检查网络后重试')
                 } finally {
                   setIsCreating(false)
                 }
@@ -339,6 +341,9 @@ export default function CreatePage() {
             {step === 4 ? (isCreating ? '创建中...' : '创建分身') : '下一步'}
           </button>
         </div>
+        {createError && (
+          <p className="text-red-500 text-sm text-center mt-3">{createError}</p>
+        )}
       </div>
     </main>
   )
