@@ -1,99 +1,111 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { buildStatusPrompt, inferMood } from '@/lib/ai-engine'
-
-// 临时状态存储
-const statusStore = new Map<string, Array<{ content: string; mood: string; time: string }>>()
-
-// 初始化模拟数据
-statusStore.set('mock-spirit-1', [
-  { content: '窝在沙发上打盹', mood: 'sleepy', time: '10:30' },
-  { content: '去隔壁找花花玩了一会儿', mood: 'playful', time: '09:15' },
-  { content: '起床，伸了个大懒腰', mood: 'content', time: '08:00' },
-  { content: '梦到了好吃的小鱼干', mood: 'happy', time: '07:30' },
-])
+import { prisma } from '@/lib/prisma'
+import { getAuthUser } from '@/lib/auth'
+import { shouldUseLocalDevStore } from '@/lib/database-health'
+import { getLocalSpiritStatuses } from '@/lib/local-dev-store'
+import { sanitizeStatusRecord } from '@/lib/status-guardrails'
 
 export async function GET(req: NextRequest) {
-  const spiritId = req.nextUrl.searchParams.get('spiritId')
-
-  if (!spiritId) {
-    return NextResponse.json({ error: 'spiritId required' }, { status: 400 })
-  }
-
-  const statuses = statusStore.get(spiritId) || statusStore.get('mock-spirit-1') || []
-  const current = statuses[0] || { content: '在新家里探索中...', mood: 'curious', time: '刚刚' }
-
-  return NextResponse.json({
-    current,
-    recent: statuses.slice(0, 10),
-  })
-}
-
-export async function POST(req: NextRequest) {
   try {
-    const { spiritId } = await req.json()
-
-    // TODO: 从数据库获取分身信息
-    const spirit = {
-      name: '史小圆',
-      spiritType: 'pet_cat' as const,
-      personality: {
-        tags: ['贪吃', '好奇', '粘人', '胆小'],
-        habits: '喜欢吃手指、总是帮苗苗姐姐埋屎',
-      },
+    const user = await getAuthUser(req.headers.get('authorization'))
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const apiKey = process.env.ANTHROPIC_API_KEY
-    let statusContent: string
+    const spiritId = req.nextUrl.searchParams.get('spiritId')
 
-    if (apiKey) {
-      const prompt = buildStatusPrompt(spirit)
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: 50,
-          messages: [{ role: 'user', content: prompt }],
-        }),
-      })
+    if (!spiritId) {
+      return NextResponse.json({ error: 'spiritId required' }, { status: 400 })
+    }
 
-      if (!response.ok) {
-        throw new Error('AI API error')
+    if (await shouldUseLocalDevStore()) {
+      const statuses = await getLocalSpiritStatuses(user.id, spiritId)
+
+      if (!statuses) {
+        return NextResponse.json({ error: 'Spirit not found' }, { status: 404 })
       }
 
-      const data = await response.json()
-      statusContent = data.content[0]?.text || '在家里待着'
-    } else {
-      // 无API key时使用预设状态
-      const presets = [
-        '趴在窗台看外面的蝴蝶',
-        '在厨房转悠，好像闻到了好吃的',
-        '追着自己的尾巴转圈圈',
-        '找到了一个纸箱子，钻进去了',
-        '在阳光下翻肚皮晒太阳',
-        '偷偷跑到隔壁串门去了',
-      ]
-      statusContent = presets[Math.floor(Math.random() * presets.length)]
+      const safeStatuses = statuses.map((status) => sanitizeStatusRecord(status))
+
+      const current = safeStatuses[0]
+        ? {
+            content: safeStatuses[0].content,
+            mood: safeStatuses[0].mood,
+            time: new Intl.DateTimeFormat('zh-CN', {
+              hour: '2-digit',
+              minute: '2-digit',
+            }).format(new Date(safeStatuses[0].createdAt)),
+          }
+        : { content: '在纪念空间里安静待着', mood: 'content', time: '刚刚' }
+
+      return NextResponse.json({
+        current,
+        recent: safeStatuses.map((status) => ({
+          id: status.id,
+          content: status.content,
+          mood: status.mood,
+          time: new Intl.DateTimeFormat('zh-CN', {
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+          }).format(new Date(status.createdAt)),
+        })),
+      })
     }
 
-    const mood = inferMood(statusContent)
-    const now = new Date()
-    const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`
+    const spirit = await prisma.spirit.findUnique({
+      where: { id: spiritId, userId: user.id },
+      select: { id: true, name: true },
+    })
 
-    const newStatus = { content: statusContent, mood, time }
-
-    if (!statusStore.has(spiritId)) {
-      statusStore.set(spiritId, [])
+    if (!spirit) {
+      return NextResponse.json({ error: 'Spirit not found' }, { status: 404 })
     }
-    statusStore.get(spiritId)!.unshift(newStatus)
 
-    return NextResponse.json({ status: newStatus })
+    const statuses = await prisma.spiritStatus.findMany({
+      where: { spiritId },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+      select: { id: true, content: true, mood: true, createdAt: true },
+    })
+
+    const safeStatuses = statuses.map((status) => sanitizeStatusRecord(status))
+
+    const current = safeStatuses[0]
+      ? {
+          content: safeStatuses[0].content,
+          mood: safeStatuses[0].mood,
+          time: new Intl.DateTimeFormat('zh-CN', {
+            hour: '2-digit',
+            minute: '2-digit',
+          }).format(new Date(safeStatuses[0].createdAt)),
+        }
+      : { content: '在纪念空间里安静待着', mood: 'content', time: '刚刚' }
+
+    return NextResponse.json({
+      current,
+      recent: safeStatuses.map((status) => ({
+        id: status.id,
+        content: status.content,
+        mood: status.mood,
+        time: new Intl.DateTimeFormat('zh-CN', {
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+        }).format(new Date(status.createdAt)),
+      })),
+    })
   } catch (error) {
-    console.error('Status generation error:', error)
+    console.error('Get status error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
+}
+
+export async function POST() {
+  return NextResponse.json(
+    { error: 'Manual status generation is disabled. Use the scheduled /api/status/generate route instead.' },
+    { status: 405 }
+  )
 }

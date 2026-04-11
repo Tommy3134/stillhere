@@ -2,9 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { blessSchema } from '@/lib/validations'
 import { BLESSING_ITEMS } from '@/lib/constants'
 import { prisma } from '@/lib/prisma'
+import { getAuthUser } from '@/lib/auth'
 
 export async function POST(req: NextRequest) {
   try {
+    const user = await getAuthUser(req.headers.get('authorization'))
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const body = await req.json()
     const parsed = blessSchema.safeParse(body)
 
@@ -22,21 +28,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid blessing type' }, { status: 400 })
     }
 
-    // 验证spirit存在
-    const spirit = await prisma.spirit.findUnique({ where: { id: spiritId } })
+    const spirit = await prisma.spirit.findUnique({ where: { id: spiritId, userId: user.id } })
     if (!spirit) {
       return NextResponse.json({ error: 'Spirit not found' }, { status: 404 })
     }
 
-    // 获取或创建临时用户（Privy auth集成后替换）
-    let user = await prisma.user.findFirst()
-    if (!user) {
-      user = await prisma.user.create({
-        data: { privyId: 'temp-user', displayName: '临时用户' },
-      })
-    }
-
-    // 写入blessings表
     const blessing = await prisma.blessing.create({
       data: {
         spiritId,
@@ -55,10 +51,24 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
+    const user = await getAuthUser(req.headers.get('authorization'))
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const spiritId = req.nextUrl.searchParams.get('spiritId')
 
     if (!spiritId) {
       return NextResponse.json({ error: 'spiritId required' }, { status: 400 })
+    }
+
+    const spirit = await prisma.spirit.findUnique({
+      where: { id: spiritId, userId: user.id },
+      select: { id: true },
+    })
+
+    if (!spirit) {
+      return NextResponse.json({ error: 'Spirit not found' }, { status: 404 })
     }
 
     const blessings = await prisma.blessing.findMany({

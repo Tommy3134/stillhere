@@ -4,48 +4,68 @@ import { buildSpiritSystemPrompt } from '@/lib/ai-engine'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 import { extractMemory, buildMemoryContext } from '@/lib/memory'
+import { getAuthUser } from '@/lib/auth'
+
+function jsonResponse(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  })
+}
 
 export async function GET(req: NextRequest) {
   try {
+    const user = await getAuthUser(req.headers.get('authorization'))
+    if (!user) {
+      return jsonResponse({ error: 'Unauthorized' }, 401)
+    }
+
     const { searchParams } = new URL(req.url)
     const spiritId = searchParams.get('spiritId')
     if (!spiritId) {
-      return new Response(JSON.stringify({ error: 'Missing spiritId' }), { status: 400, headers: { 'Content-Type': 'application/json' } })
+      return jsonResponse({ error: 'Missing spiritId' }, 400)
     }
+
+    const spirit = await prisma.spirit.findUnique({
+      where: { id: spiritId, userId: user.id },
+      select: { id: true },
+    })
+    if (!spirit) {
+      return jsonResponse({ error: 'Spirit not found' }, 404)
+    }
+
     const messages = await prisma.message.findMany({
       where: { spiritId },
       orderBy: { createdAt: 'desc' },
       take: 50,
       select: { id: true, role: true, content: true, createdAt: true },
     })
-    return new Response(JSON.stringify({ messages: messages.reverse() }), { headers: { 'Content-Type': 'application/json' } })
+    return jsonResponse({ messages: messages.reverse() })
   } catch (error) {
     console.error('Get chat history error:', error)
-    return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500, headers: { 'Content-Type': 'application/json' } })
+    return jsonResponse({ error: 'Internal server error' }, 500)
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
+    const user = await getAuthUser(req.headers.get('authorization'))
+    if (!user) {
+      return jsonResponse({ error: 'Unauthorized' }, 401)
+    }
+
     const body = await req.json()
     const parsed = sendMessageSchema.safeParse(body)
 
     if (!parsed.success) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid input', details: parsed.error.flatten() }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      )
+      return jsonResponse({ error: 'Invalid input', details: parsed.error.flatten() }, 400)
     }
 
     const { spiritId, content } = parsed.data
 
-    // 从数据库获取分身
-    const spirit = await prisma.spirit.findUnique({ where: { id: spiritId } })
+    const spirit = await prisma.spirit.findUnique({ where: { id: spiritId, userId: user.id } })
     if (!spirit) {
-      return new Response(
-        JSON.stringify({ error: 'Spirit not found' }),
-        { status: 404, headers: { 'Content-Type': 'application/json' } }
-      )
+      return jsonResponse({ error: 'Spirit not found' }, 404)
     }
 
     const personality = spirit.personality as { tags: string[]; habits?: string; funnyStory?: string; memory?: Record<string, unknown> }
@@ -58,7 +78,7 @@ export async function POST(req: NextRequest) {
 
     // 保存用户消息到数据库
     await prisma.message.create({
-      data: { spiritId, userId: spirit.userId, role: 'user', content },
+      data: { spiritId, userId: user.id, role: 'user', content },
     })
 
     // 获取最近20条对话历史
@@ -75,12 +95,9 @@ export async function POST(req: NextRequest) {
       // 没有API key时返回模拟回复
       const mockReply = getMockReply(personality.tags)
       await prisma.message.create({
-        data: { spiritId, userId: spirit.userId, role: 'spirit', content: mockReply },
+        data: { spiritId, userId: user.id, role: 'spirit', content: mockReply },
       })
-      return new Response(
-        JSON.stringify({ message: mockReply, spiritId }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } }
-      )
+      return jsonResponse({ message: mockReply, spiritId })
     }
 
     // 使用Claude API（SSE流式）
@@ -116,7 +133,7 @@ export async function POST(req: NextRequest) {
     // 转发SSE流
     const encoder = new TextEncoder()
     let fullReply = ''
-    const userId = spirit.userId
+    const userId = user.id
     const sid = spiritId
 
     const stream = new ReadableStream({
@@ -194,10 +211,7 @@ export async function POST(req: NextRequest) {
     })
   } catch (error) {
     console.error('Chat error:', error)
-    return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    )
+    return jsonResponse({ error: 'Internal server error' }, 500)
   }
 }
 

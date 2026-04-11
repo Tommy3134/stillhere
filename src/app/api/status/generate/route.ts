@@ -1,7 +1,16 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+
 import { prisma } from '@/lib/prisma'
 import { buildStatusPrompt, inferMood } from '@/lib/ai-engine'
 import { SPIRIT_TYPES } from '@/lib/constants'
+import { isAuthorizedCronRequest } from '@/lib/cron'
+import { shouldUseLocalDevStore } from '@/lib/database-health'
+import { sanitizeStatusContent } from '@/lib/status-guardrails'
+import {
+  createLocalSpiritMessage,
+  createLocalSpiritStatus,
+  listAllLocalActiveSpirits,
+} from '@/lib/local-dev-store'
 
 const FALLBACK_STATUSES: Record<string, string[]> = {
   pet_cat: [
@@ -33,7 +42,7 @@ const FALLBACK_STATUSES: Record<string, string[]> = {
     '好奇地看着窗外的风景',
     '在角落里找到了好玩的东西',
     '吃完饭满足地眯起了眼睛',
-    '在彼岸世界探索新地方',
+    '在熟悉的小角落里慢慢转悠',
     '和新朋友一起晒太阳',
   ],
   human: [
@@ -59,6 +68,17 @@ interface PersonalityData {
   tags: string[]
   habits?: string
   funnyStory?: string
+  birthday?: string
+  passedDate?: string
+}
+
+interface SpiritGenerationInput {
+  id: string
+  userId: string
+  name: string
+  spiritType: string
+  personality: PersonalityData
+  homeStyle: string
 }
 
 async function generateWithAI(
@@ -115,131 +135,183 @@ function getMissMessage(name: string, spiritType: string, tags: string[]): strin
     '这边一切都好，不用担心我',
   ]
   const defaultMessages = [
-    `想你了，什么时候来看看我呀`,
-    `今天过得还好，就是有点想你`,
-    `你不来的时候我也过得很好哦，不过还是想你`,
+    '想你了，什么时候来看看我呀',
+    '今天过得还好，就是有点想你',
+    '你不来的时候我也过得很好哦，不过还是想你',
   ]
 
-  // 性格特化
-  if (tags.includes('粘人')) return `你怎么还不来看我...我好想你啊`
-  if (tags.includes('霸道')) return `哼，你是不是把我忘了？快来！`
-  if (tags.includes('独立')) return `嗯...偶尔也会想你一下`
+  if (tags.includes('粘人')) return '你怎么还不来看我...我好想你啊'
+  if (tags.includes('霸道')) return '哼，你是不是把我忘了？快来！'
+  if (tags.includes('独立')) return '嗯...偶尔也会想你一下'
 
-  const pool = spiritType === 'pet_cat' ? catMessages
-    : spiritType === 'pet_dog' ? dogMessages
-    : spiritType === 'human' ? humanMessages
-    : defaultMessages
+  const pool = spiritType === 'pet_cat'
+    ? catMessages
+    : spiritType === 'pet_dog'
+      ? dogMessages
+      : spiritType === 'human'
+        ? humanMessages
+        : defaultMessages
+
   return pool[Math.floor(Math.random() * pool.length)]
 }
 
 function pickFallback(spiritType: string, neighbors?: string[]): string {
-  // 30%概率生成邻居互动状态
   if (neighbors && neighbors.length > 0 && Math.random() < 0.3) {
     const template = NEIGHBOR_TEMPLATES[Math.floor(Math.random() * NEIGHBOR_TEMPLATES.length)]
     const neighbor = neighbors[Math.floor(Math.random() * neighbors.length)]
     return template.replace('{name}', neighbor)
   }
+
   const pool = FALLBACK_STATUSES[spiritType] || FALLBACK_STATUSES.pet_other
   return pool[Math.floor(Math.random() * pool.length)]
 }
 
-export async function GET() {
-  return handleGenerate()
+async function generateStatusesForSpirits(
+  spirits: SpiritGenerationInput[],
+  options: {
+    createStatus: (input: { spiritId: string; content: string; mood: string }) => Promise<void>
+    createSpiritMessage?: (input: { spiritId: string; userId: string; content: string }) => Promise<void>
+  }
+) {
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  const results: Array<{ spiritId: string; content: string; mood: string }> = []
+
+  for (const spirit of spirits) {
+    let content: string
+    const personality = spirit.personality
+
+    const today = new Date()
+    const mmdd = `${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+    const isBirthday = personality.birthday && personality.birthday.slice(5) === mmdd
+    const isMemorialDay = personality.passedDate && personality.passedDate.slice(5) === mmdd
+
+    if (isBirthday) {
+      content = `今天是${spirit.name}的生日，你留下的这些回忆显得格外明亮`
+      const mood = 'happy'
+      await options.createStatus({ spiritId: spirit.id, content, mood })
+      results.push({ spiritId: spirit.id, content, mood })
+      continue
+    }
+
+    if (isMemorialDay) {
+      content = `今天是特别的日子。${spirit.name}安静地坐在窗边，望着远方，好像在等谁回来`
+      const mood = 'content'
+      await options.createStatus({ spiritId: spirit.id, content, mood })
+      results.push({ spiritId: spirit.id, content, mood })
+      continue
+    }
+
+    const neighbors = spirits
+      .filter((item) => item.id !== spirit.id && item.homeStyle === spirit.homeStyle)
+      .map((item) => item.name)
+    const fallbackContent = pickFallback(spirit.spiritType, neighbors)
+
+    if (apiKey) {
+      try {
+        const aiContent = await generateWithAI(
+          {
+            name: spirit.name,
+            spiritType: spirit.spiritType,
+            personality,
+          },
+          apiKey,
+        )
+        content = sanitizeStatusContent(aiContent, fallbackContent)
+      } catch (err) {
+        console.error(`AI generation failed for spirit ${spirit.id}:`, err)
+        content = fallbackContent
+      }
+    } else {
+      content = fallbackContent
+    }
+
+    content = sanitizeStatusContent(content, fallbackContent)
+    const mood = inferMood(content)
+    await options.createStatus({ spiritId: spirit.id, content, mood })
+
+    if (options.createSpiritMessage && Math.random() < 0.2) {
+      const missMessages = getMissMessage(spirit.name, spirit.spiritType, personality.tags)
+      await options.createSpiritMessage({
+        spiritId: spirit.id,
+        userId: spirit.userId,
+        content: missMessages,
+      })
+    }
+
+    results.push({ spiritId: spirit.id, content, mood })
+  }
+
+  return results
 }
 
-export async function POST() {
-  return handleGenerate()
+export async function GET(req: NextRequest) {
+  return handleGenerate(req)
 }
 
-async function handleGenerate() {
+export async function POST(req: NextRequest) {
+  return handleGenerate(req)
+}
+
+async function handleGenerate(req: NextRequest) {
   try {
+    if (!isAuthorizedCronRequest(req)) {
+      return NextResponse.json({ error: 'Unauthorized cron request' }, { status: 401 })
+    }
+
+    if (await shouldUseLocalDevStore()) {
+      const spirits = (await listAllLocalActiveSpirits()).map((spirit) => ({
+        ...spirit,
+        personality: spirit.personality as unknown as PersonalityData,
+      }))
+
+      if (spirits.length === 0) {
+        return NextResponse.json({ generated: 0, message: 'No active spirits', storage: 'local-dev-store' })
+      }
+
+      const results = await generateStatusesForSpirits(spirits, {
+        createStatus: async ({ spiritId, content, mood }) => {
+          await createLocalSpiritStatus({ spiritId, content, mood })
+        },
+        createSpiritMessage: async ({ spiritId, userId, content }) => {
+          await createLocalSpiritMessage({ spiritId, userId, role: 'spirit', content })
+        },
+      })
+
+      return NextResponse.json({ generated: results.length, results, storage: 'local-dev-store' })
+    }
+
     const spirits = await prisma.spirit.findMany({
       where: { isActive: true },
-      select: { id: true, name: true, spiritType: true, personality: true, homeStyle: true },
+      select: { id: true, userId: true, name: true, spiritType: true, personality: true, homeStyle: true },
     })
 
     if (spirits.length === 0) {
       return NextResponse.json({ generated: 0, message: 'No active spirits' })
     }
 
-    const apiKey = process.env.ANTHROPIC_API_KEY
-    const results: Array<{ spiritId: string; content: string; mood: string }> = []
-
-    for (const spirit of spirits) {
-      let content: string
-      const personality = spirit.personality as unknown as PersonalityData & { birthday?: string; passedDate?: string }
-
-      // 检查特殊日期
-      const today = new Date()
-      const mmdd = `${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
-      const isBirthday = personality.birthday && personality.birthday.slice(5) === mmdd
-      const isMemorialDay = personality.passedDate && personality.passedDate.slice(5) === mmdd
-
-      if (isBirthday) {
-        content = `今天是${spirit.name}的生日！在彼岸世界收到了好多祝福，开心地转圈圈`
-        const mood = 'happy'
-        await prisma.spiritStatus.create({ data: { spiritId: spirit.id, content, mood } })
-        results.push({ spiritId: spirit.id, content, mood })
-        continue
-      }
-
-      if (isMemorialDay) {
-        content = `今天是特别的日子。${spirit.name}安静地坐在窗边，望着远方，好像在等谁回来`
-        const mood = 'content'
-        await prisma.spiritStatus.create({ data: { spiritId: spirit.id, content, mood } })
-        results.push({ spiritId: spirit.id, content, mood })
-        continue
-      }
-
-      // 查找邻居（同homeStyle的其他分身）
-      const neighbors = spirits
-        .filter(s => s.id !== spirit.id && s.homeStyle === spirit.homeStyle)
-        .map(s => s.name)
-
-      if (apiKey) {
-        try {
-          content = await generateWithAI(
-            {
-              name: spirit.name,
-              spiritType: spirit.spiritType,
-              personality: spirit.personality as unknown as PersonalityData,
-            },
-            apiKey,
-          )
-          if (!content) content = pickFallback(spirit.spiritType, neighbors)
-        } catch (err) {
-          console.error(`AI generation failed for spirit ${spirit.id}:`, err)
-          content = pickFallback(spirit.spiritType, neighbors)
-        }
-      } else {
-        content = pickFallback(spirit.spiritType, neighbors)
-      }
-
-      const mood = inferMood(content)
-
-      await prisma.spiritStatus.create({
-        data: {
-          spiritId: spirit.id,
-          content,
-          mood,
+    const results = await generateStatusesForSpirits(
+      spirits.map((spirit) => ({
+        ...spirit,
+        personality: spirit.personality as unknown as PersonalityData,
+      })),
+      {
+        createStatus: async ({ spiritId, content, mood }) => {
+          await prisma.spiritStatus.create({
+            data: { spiritId, content, mood },
+          })
         },
-      })
-
-      // 20%概率生成一条"想主人"的消息（用户下次打开聊天能看到）
-      if (Math.random() < 0.2) {
-        const missMessages = getMissMessage(spirit.name, spirit.spiritType, personality.tags)
-        await prisma.message.create({
-          data: {
-            spiritId: spirit.id,
-            userId: (await prisma.spirit.findUnique({ where: { id: spirit.id }, select: { userId: true } }))!.userId,
-            role: 'spirit',
-            content: missMessages,
-          },
-        })
+        createSpiritMessage: async ({ spiritId, userId, content }) => {
+          await prisma.message.create({
+            data: {
+              spiritId,
+              userId,
+              role: 'spirit',
+              content,
+            },
+          })
+        },
       }
-
-      results.push({ spiritId: spirit.id, content, mood })
-    }
+    )
 
     return NextResponse.json({ generated: results.length, results })
   } catch (error) {

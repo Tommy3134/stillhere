@@ -29,7 +29,7 @@ export default function ChatHeader({ name, spiritType, onBack }: ChatHeaderProps
           <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 rounded-full border-2 border-white" />
         </div>
         <span className="text-sm font-medium text-stone-700">{name}</span>
-        <span className="text-xs text-stone-400">在彼岸世界</span>
+        <span className="text-xs text-stone-400">纪念对话内测</span>
       </div>
 
       <button
