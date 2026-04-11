@@ -1,5 +1,7 @@
 import { PrivyClient } from '@privy-io/server-auth'
 import { prisma } from './prisma'
+import { shouldUseLocalDevStore } from './database-health'
+import { getOrCreateLocalDevUser } from './local-dev-store'
 
 const privyClient = new PrivyClient(
   process.env.NEXT_PUBLIC_PRIVY_APP_ID!,
@@ -13,6 +15,16 @@ export async function getAuthUser(authHeader: string | null) {
     const token = authHeader.slice(7)
     const verifiedClaims = await privyClient.verifyAuthToken(token)
     const privyId = verifiedClaims.userId
+    const useLocalStore = await shouldUseLocalDevStore()
+
+    if (useLocalStore) {
+      const privyUser = await privyClient.getUser(privyId).catch(() => null)
+      return getOrCreateLocalDevUser({
+        privyId,
+        email: privyUser?.email?.address || null,
+        walletAddress: privyUser?.wallet?.address || null,
+      })
+    }
 
     // 查找或创建用户
     let user = await prisma.user.findUnique({ where: { privyId } })

@@ -6,7 +6,11 @@ import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 
 function isPublicEntryPath(pathname: string) {
-  return pathname === '/' || pathname.startsWith('/share/')
+  if (pathname === '/' || pathname === '/beta' || pathname === '/feedback') {
+    return true
+  }
+
+  return pathname.startsWith('/share/') || pathname.startsWith('/sample/')
 }
 
 export function Providers({ children }: { children: React.ReactNode }) {

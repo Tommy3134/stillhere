@@ -4,6 +4,9 @@ import Image from 'next/image'
 import { prisma } from '@/lib/prisma'
 import type { Metadata } from 'next'
 import { createShareablePhotoUrl, createSignedPhotoUrls } from '@/lib/storage'
+import { shouldUseLocalDevStore } from '@/lib/database-health'
+import { getLocalSharedSpirit } from '@/lib/local-dev-store'
+import { sanitizeStatusRecord } from '@/lib/status-guardrails'
 
 const EMOJI_MAP: Record<string, string> = {
   pet_cat: '🐱',
@@ -37,6 +40,22 @@ function formatMemorialDate(date: string) {
 }
 
 async function getSpirit(id: string) {
+  if (await shouldUseLocalDevStore()) {
+    const spirit = await getLocalSharedSpirit(id)
+
+    if (!spirit) {
+      return null
+    }
+
+    return {
+      ...spirit,
+      statuses: spirit.statuses.map((status) => ({
+        ...sanitizeStatusRecord(status),
+        createdAt: new Date(status.createdAt),
+      })),
+    }
+  }
+
   const spirit = await prisma.spirit.findFirst({
     where: { id, shareEnabled: true },
     include: {
@@ -50,7 +69,10 @@ async function getSpirit(id: string) {
     return null
   }
 
-  return spirit
+  return {
+    ...spirit,
+    statuses: spirit.statuses.map((status) => sanitizeStatusRecord(status)),
+  }
 }
 
 type Props = { params: Promise<{ id: string }> }
