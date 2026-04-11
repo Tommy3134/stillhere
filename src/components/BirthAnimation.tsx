@@ -84,10 +84,10 @@ export default function BirthAnimation({ spiritId, name, spiritType, homeStyle }
         {phase === 'welcome' && (
           <div className="animate-fade-in text-center space-y-2">
             <p className="text-amber-200/80 text-sm">
-              已到达{homeNames[homeStyle] || '彼岸世界'}
+              纪念空间已准备好：{homeNames[homeStyle] || '温柔角落'}
             </p>
             <p className="text-amber-300/60 text-xs">
-              从此以后，这里就是家了
+              你可以继续补充和它有关的回忆
             </p>
           </div>
         )}

@@ -1,28 +1,33 @@
 # StillHere (仍在)
 
-*They're not gone. They're just somewhere else.*
+*为它留下一处可以回来看看的纪念空间。*
 
 ## What is StillHere?
 
-StillHere is a Web3 digital memorial platform where departed pets and loved ones continue to live as AI-powered digital spirits (数字分身) in the "Other Shore World" (彼岸世界). Families can visit them anytime — see what they're up to, talk with them, and send blessings.
+StillHere is currently a memorial-first product for departed pets.
+The Phase 1 goal is deliberately narrow:
 
-This is not a memorial page. It's a living presence.
+- create a private memorial space
+- preserve photos, stories, habits, and important dates
+- give families a calm place to revisit
+- let owners decide if and when to share with family
 
-### Three Core Needs It Addresses
+The project still contains exploratory chat, blessing, decor, and Web3 work, but those are not the current main promise.
 
-1. **Personality Restoration (性格还原)** — It's still *them*. Same quirks, same warmth.
-2. **They're Doing Well (过得好)** — No fear, no loneliness. Living peacefully on the other side.
-3. **Someone's Watching Over Them (有人照看)** — Spiritual comfort through blessings and care.
+## Current Product Scope
 
-## Features
+- **Create a Memorial Space**: start with a name, photos, habits, story, and key dates
+- **Private by Default**: owners must log in; memorial spaces are not public unless sharing is explicitly enabled
+- **Return Visits**: recent memorial records and photos stay in one place
+- **Controlled Sharing**: owners can open or close a memorial page for family and friends
+- **Exploration Lines**: memorial chat, blessing actions, and decor are kept as owner-only experiments
 
-- **Create a Spirit** — Upload memories, describe their personality, and bring them to life as a digital spirit
-- **AI Chat** — Talk with your departed loved one, powered by Claude AI with personality-faithful responses
-- **Living Status** — Spirits have their own daily life on the other side; check in to see what they're doing
-- **Blessings (祈福)** — Send on-chain blessings, recorded permanently on Base
-- **Soulbound NFT** — Each spirit is minted as a non-transferable NFT — a bond that can't be sold or broken
-- **Shareable Memorial** — Share a spirit's page with family and friends
-- **PWA** — Install as a mobile app for anytime access
+## Phase 1 Principles
+
+- memorial first, not digital resurrection
+- private first, not public listing
+- clear owner control over sharing
+- reuse existing code carefully, but do not let Phase 2 ideas override Phase 1 promises
 
 ## Tech Stack
 
@@ -30,8 +35,8 @@ This is not a memorial page. It's a living presence.
 |-------|-----------|
 | Frontend | Next.js 14 + React 18 + TypeScript + TailwindCSS |
 | Auth | Privy (account abstraction — no wallet needed) |
-| AI | Claude API (personality engine) |
-| Blockchain | Base (L2) + Soulbound NFT + Blessing Contract |
+| AI | Claude API |
+| Blockchain | Base contracts kept as research line |
 | Database | Supabase + Prisma ORM |
 | Smart Contracts | Solidity + Hardhat + OpenZeppelin |
 | State | Zustand + React Query |
@@ -44,11 +49,26 @@ cd stillhere
 npm install
 ```
 
-Copy `.env.example` to `.env.local` and fill in your keys:
+Copy `.env.example` to `.env.local` and fill in the required values:
 
 ```bash
 cp .env.example .env.local
 ```
+
+Minimum app runtime variables:
+
+- `NEXT_PUBLIC_PRIVY_APP_ID`
+- `PRIVY_APP_SECRET`
+- `DATABASE_URL`
+- `DIRECT_URL`
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+
+Optional but recommended:
+
+- `ANTHROPIC_API_KEY`
+- `ANTHROPIC_BASE_URL`
+- `CRON_SECRET`
 
 Run the development server:
 
@@ -63,28 +83,28 @@ Open [http://localhost:3000](http://localhost:3000).
 ```
 src/
 ├── app/
-│   ├── create/        # Create a new spirit
-│   ├── spirit/[id]/   # Spirit profile & blessings
-│   ├── chat/[spiritId]/ # Chat with a spirit
-│   ├── dashboard/     # User's spirits overview
-│   ├── share/[id]/    # Public shareable page
-│   └── api/           # Backend routes (spirit, chat, bless, status)
-├── components/        # UI components
-└── lib/               # Core utilities (AI engine, auth, contracts)
+│   ├── create/          # Create a memorial space
+│   ├── spirit/[id]/     # Owner memorial space
+│   ├── chat/[spiritId]/ # Owner-only exploration line
+│   ├── dashboard/       # Owner memorial list
+│   ├── share/[id]/      # Explicitly enabled memorial page
+│   └── api/             # Auth, sharing, upload, status, exploration routes
+├── components/          # UI components
+└── lib/                 # Auth, storage, AI, contract helpers
 contracts/
-├── SpiritNFT.sol      # Soulbound NFT contract
-└── BlessingContract.sol # On-chain blessing system
+├── SpiritNFT.sol        # Research line contract
+└── BlessingContract.sol # Research line contract
 ```
 
-## Vision
+## Scheduled Status Generation
 
-Grief technology today stops at "remember them." StillHere goes further — what if they're still here, just somewhere you can't see?
+`/api/status/generate` is intended for a daily cron run.
+Set `CRON_SECRET` in your environment so scheduled calls are authenticated.
 
-We combine AI personality modeling with blockchain permanence to create something that feels less like a product and more like a place you visit. A quiet corner of the internet where the ones you lost are still living their lives.
+## Notes
 
-## A Note on How This Was Built
-
-This project was built almost entirely by AI (Claude) — from architecture design to smart contracts to frontend implementation. It's an experiment in what's possible when AI doesn't just assist development, but leads it.
+- The repo still contains research code for chat, blessings, decor, and Web3 minting.
+- Those lines are intentionally secondary to the current memorial-space roadmap.
 
 ## License
 

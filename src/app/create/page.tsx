@@ -1,16 +1,32 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
+import { usePrivy } from '@privy-io/react-auth'
 import { SPIRIT_TYPES, PERSONALITY_TAGS, HOME_STYLES } from '@/lib/constants'
 import { useAuthFetch } from '@/lib/use-auth-fetch'
 import BirthAnimation from '@/components/BirthAnimation'
+import { LoginButton } from '@/components/LoginButton'
+import { AuthLoadingState } from '@/components/AuthLoadingState'
 import type { SpiritType } from '@/lib/constants'
 
 type Step = 1 | 2 | 3 | 4
 
+async function readResponsePayload(res: Response) {
+  const contentType = res.headers.get('content-type') || ''
+
+  if (contentType.includes('application/json')) {
+    return res.json()
+  }
+
+  const text = await res.text()
+  return text ? { error: text } : {}
+}
+
 export default function CreatePage() {
   const [step, setStep] = useState<Step>(1)
   const [spiritType, setSpiritType] = useState<SpiritType | ''>('')
+  const { ready, authenticated } = usePrivy()
   const [name, setName] = useState('')
   const authFetch = useAuthFetch()
   const [nickname, setNickname] = useState('')
@@ -53,11 +69,14 @@ export default function CreatePage() {
   }
 
   const canNext = () => {
-    if (step === 1) return spiritType && name
+    if (step === 1) return spiritType && name.trim()
     if (step === 2) return true // 照片暂时可选
     if (step === 3) return selectedTags.length > 0
     return true
   }
+
+  const createTypeOptions = (Object.entries(SPIRIT_TYPES) as [SpiritType, string][])
+    .filter(([key]) => key !== 'human')
 
   if (birthData) {
     return (
@@ -70,8 +89,37 @@ export default function CreatePage() {
     )
   }
 
+  if (!ready) {
+    return (
+      <AuthLoadingState
+        title="正在准备创建流程"
+        body="创建页需要先连接登录服务。要是这里停留太久，通常是 Privy 的 localhost 域名还没在控制台放行。"
+      />
+    )
+  }
+
+  if (!authenticated) {
+    return (
+      <main className="min-h-screen bg-amber-50 px-6 py-12">
+        <div className="mx-auto max-w-xl rounded-[2rem] bg-white p-8 text-center shadow-sm">
+          <p className="text-sm uppercase tracking-[0.3em] text-stone-400">Create Memorial</p>
+          <h1 className="mt-4 text-3xl font-light text-stone-700">先登录，再为它创建纪念空间</h1>
+          <p className="mt-4 text-sm leading-7 text-stone-500">
+            我们把纪念空间默认设为私密，这样照片、故事和重要日子都会先只属于你。
+          </p>
+          <div className="mt-8">
+            <LoginButton
+              label="登录并开始创建"
+              className="inline-flex rounded-full bg-amber-600 px-8 py-3 text-white transition-colors hover:bg-amber-700"
+            />
+          </div>
+        </div>
+      </main>
+    )
+  }
+
   return (
-    <main className="min-h-screen flex flex-col items-center px-6 py-12">
+    <main className="min-h-screen bg-amber-50 flex flex-col items-center px-6 py-12">
       <div className="max-w-md w-full">
         {/* 进度条 */}
         <div className="flex gap-2 mb-8">
@@ -86,12 +134,15 @@ export default function CreatePage() {
         {/* Step 1: 基本信息 */}
         {step === 1 && (
           <div className="space-y-6">
-            <h2 className="text-xl text-stone-700">告诉我们关于它的故事</h2>
+            <h2 className="text-xl text-stone-700">先为它留下一张纪念名片</h2>
+            <p className="text-sm leading-6 text-stone-500">
+              第一阶段只需要最基础的信息。你之后还可以继续补充照片、故事和重要时刻。
+            </p>
 
             <div className="space-y-3">
               <p className="text-sm text-stone-500">它是...</p>
               <div className="grid grid-cols-2 gap-3">
-                {(Object.entries(SPIRIT_TYPES) as [SpiritType, string][]).map(([key, label]) => (
+                {createTypeOptions.map(([key, label]) => (
                   <button
                     key={key}
                     onClick={() => setSpiritType(key)}
@@ -134,13 +185,20 @@ export default function CreatePage() {
         {/* Step 2: 上传照片 */}
         {step === 2 && (
           <div className="space-y-6">
-            <h2 className="text-xl text-stone-700">分享它的照片</h2>
-            <p className="text-sm text-stone-400">上传越多，它的数字分身越像它（之后还可以继续补充）</p>
+            <h2 className="text-xl text-stone-700">放进第一批回忆照片</h2>
+            <p className="text-sm text-stone-400">这些照片会成为纪念空间里最先被保存下来的画面，之后也可以继续补充。</p>
 
             <div className="grid grid-cols-3 gap-3">
               {photoPreviews.map((url, i) => (
                 <div key={i} className="relative aspect-square rounded-xl overflow-hidden">
-                  <img src={url} alt="" className="w-full h-full object-cover" />
+                  <Image
+                    src={url}
+                    alt={`待上传照片 ${i + 1}`}
+                    fill
+                    unoptimized
+                    sizes="(max-width: 768px) 33vw, 160px"
+                    className="object-cover"
+                  />
                   <button
                     onClick={() => removePhoto(i)}
                     className="absolute top-1 right-1 w-6 h-6 bg-black/50 text-white rounded-full text-xs flex items-center justify-center"
@@ -173,7 +231,7 @@ export default function CreatePage() {
         {/* Step 3: 性格描述 */}
         {step === 3 && (
           <div className="space-y-6">
-            <h2 className="text-xl text-stone-700">它是什么样的性格？</h2>
+            <h2 className="text-xl text-stone-700">写下它最像它的样子</h2>
 
             <div className="space-y-3">
               <p className="text-sm text-stone-500">快速选择（最多6个）</p>
@@ -210,7 +268,7 @@ export default function CreatePage() {
               <textarea
                 value={funnyStory}
                 onChange={e => setFunnyStory(e.target.value)}
-                placeholder="随便写，这会让它的数字分身更像它"
+                placeholder="随便写，这会让纪念空间更像你记得的它"
                 rows={3}
                 className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:border-amber-500 focus:outline-none bg-white resize-none"
               />
@@ -221,8 +279,8 @@ export default function CreatePage() {
         {/* Step 4: 选择家 */}
         {step === 4 && (
           <div className="space-y-6">
-            <h2 className="text-xl text-stone-700">在彼岸世界，它的家是什么样的？</h2>
-            <p className="text-sm text-stone-400">之后可以随时更换和装饰</p>
+            <h2 className="text-xl text-stone-700">选择纪念空间的风格</h2>
+            <p className="text-sm text-stone-400">这里只是第一版呈现方式，之后还可以慢慢补充和调整。</p>
 
             <div className="grid grid-cols-2 gap-3">
               {Object.entries(HOME_STYLES).map(([key, label]) => {
@@ -296,23 +354,33 @@ export default function CreatePage() {
                   if (photos.length > 0) {
                     const formData = new FormData()
                     photos.forEach(f => formData.append('photos', f))
-                    const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData })
-                    const uploadData = await uploadRes.json()
-                    if (uploadData.urls) photoUrls = uploadData.urls
+                    const uploadRes = await authFetch('/api/upload', { method: 'POST', body: formData })
+                    const uploadData = await readResponsePayload(uploadRes)
+                    if (!uploadRes.ok) {
+                      throw new Error(uploadData.error || '照片上传失败')
+                    }
+                    if (uploadData.paths) photoUrls = uploadData.paths
                   }
 
                   const res = await authFetch('/api/spirit', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                      name,
+                      name: name.trim(),
                       spiritType,
-                      personality: { tags: selectedTags, habits, funnyStory, birthday: birthday || undefined, passedDate: passedDate || undefined },
+                      personality: {
+                        nickname: nickname.trim() || undefined,
+                        tags: selectedTags,
+                        habits: habits.trim() || undefined,
+                        funnyStory: funnyStory.trim() || undefined,
+                        birthday: birthday || undefined,
+                        passedDate: passedDate || undefined,
+                      },
                       homeStyle,
                       photoUrls,
                     }),
                   })
-                  const data = await res.json()
+                  const data = await readResponsePayload(res)
                   if (res.ok) {
                     setBirthData({
                       id: data.spirit.id,
@@ -325,7 +393,7 @@ export default function CreatePage() {
                   }
                 } catch (e) {
                   console.error(e)
-                  setCreateError('网络连接失败，请检查网络后重试')
+                  setCreateError(e instanceof Error ? e.message : '创建失败，请稍后再试')
                 } finally {
                   setIsCreating(false)
                 }
@@ -338,7 +406,7 @@ export default function CreatePage() {
                 : 'bg-stone-200 text-stone-400 cursor-not-allowed'
             }`}
           >
-            {step === 4 ? (isCreating ? '创建中...' : '创建分身') : '下一步'}
+            {step === 4 ? (isCreating ? '创建中...' : '创建纪念空间') : '下一步'}
           </button>
         </div>
         {createError && (

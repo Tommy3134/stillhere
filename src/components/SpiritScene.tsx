@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import SpiritAvatarSVG from './SpiritAvatarSVG'
 
 type Mood = 'sleepy' | 'playful' | 'content' | 'curious' | 'happy'
@@ -50,8 +51,15 @@ export default function SpiritScene({ name, spiritType, mood, photoUrl, homeStyl
       {/* 分身形象 */}
       <div className={`absolute bottom-[20%] left-1/2 -translate-x-1/2 ${animation}`}>
         {photoUrl ? (
-          <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-lg">
-            <img src={photoUrl} alt={name} className="w-full h-full object-cover" />
+          <div className="relative w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-lg">
+            <Image
+              src={photoUrl}
+              alt={name}
+              fill
+              unoptimized
+              sizes="96px"
+              className="object-cover"
+            />
           </div>
         ) : (
           <SpiritAvatar spiritType={spiritType} mood={mood} />

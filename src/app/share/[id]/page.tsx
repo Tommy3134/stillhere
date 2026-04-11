@@ -1,7 +1,9 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { prisma } from '@/lib/prisma'
 import type { Metadata } from 'next'
+import { createShareablePhotoUrl, createSignedPhotoUrls } from '@/lib/storage'
 
 const EMOJI_MAP: Record<string, string> = {
   pet_cat: '🐱',
@@ -17,9 +19,26 @@ const MOOD_MAP: Record<string, string> = {
   curious: '🔍',
 }
 
+interface SharePersonality {
+  nickname?: string
+  tags?: string[]
+  habits?: string
+  funnyStory?: string
+  birthday?: string
+  passedDate?: string
+}
+
+function formatMemorialDate(date: string) {
+  return new Intl.DateTimeFormat('zh-CN', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  }).format(new Date(`${date}T00:00:00`))
+}
+
 async function getSpirit(id: string) {
-  const spirit = await prisma.spirit.findUnique({
-    where: { id },
+  const spirit = await prisma.spirit.findFirst({
+    where: { id, shareEnabled: true },
     include: {
       statuses: {
         orderBy: { createdAt: 'desc' },
@@ -27,6 +46,10 @@ async function getSpirit(id: string) {
       },
     },
   })
+  if (!spirit) {
+    return null
+  }
+
   return spirit
 }
 
@@ -37,14 +60,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const spirit = await getSpirit(id)
   if (!spirit) return {}
 
-  const latestStatus = spirit.statuses[0]?.content ?? `${spirit.name}正在彼岸世界安好地生活`
-  const ogImage = spirit.photoUrls.length > 0 ? spirit.photoUrls[0] : undefined
+  const latestStatus = spirit.statuses[0]?.content ?? `${spirit.name}的纪念页`
+  const ogImage = await createShareablePhotoUrl(spirit.photoUrls[0]) || undefined
 
   return {
-    title: `${spirit.name} 在彼岸世界 | StillHere`,
+    title: `${spirit.name} 的纪念页 | StillHere`,
     description: latestStatus,
+    robots: {
+      index: false,
+      follow: false,
+    },
     openGraph: {
-      title: `${spirit.name} 在彼岸世界 | StillHere`,
+      title: `${spirit.name} 的纪念页 | StillHere`,
       description: latestStatus,
       ...(ogImage ? { images: [{ url: ogImage }] } : {}),
     },
@@ -58,17 +85,37 @@ export default async function SharePage({ params }: Props) {
 
   const emoji = EMOJI_MAP[spirit.spiritType] ?? '🐾'
   const latestStatus = spirit.statuses[0]
-  const hasPhoto = spirit.photoUrls.length > 0
+  const shareablePhotos = await createSignedPhotoUrls(spirit.photoUrls.slice(0, 4), 60 * 30)
+  const heroPhoto = shareablePhotos[0] || await createShareablePhotoUrl(spirit.photoUrls[0])
+  const hasPhoto = Boolean(heroPhoto)
+  const personality = (
+    spirit.personality && typeof spirit.personality === 'object' && !Array.isArray(spirit.personality)
+      ? spirit.personality
+      : {}
+  ) as SharePersonality
+  const memorialFacts = [
+    personality.nickname ? { label: '家人常叫它', value: personality.nickname } : null,
+    personality.birthday ? { label: '生日', value: formatMemorialDate(personality.birthday) } : null,
+    personality.passedDate ? { label: '离开的日子', value: formatMemorialDate(personality.passedDate) } : null,
+  ].filter((item): item is { label: string; value: string } => Boolean(item))
+  const personalityNotes = [
+    personality.habits ? { label: '习惯和怪癖', value: personality.habits } : null,
+    personality.funnyStory ? { label: '总会让人想起的一件事', value: personality.funnyStory } : null,
+  ].filter((item): item is { label: string; value: string } => Boolean(item))
+  const tags = Array.isArray(personality.tags) ? personality.tags : []
 
   return (
     <main className="min-h-screen bg-amber-50 flex flex-col items-center px-6 py-12">
-      <div className="max-w-md w-full space-y-8">
+      <div className="max-w-xl w-full space-y-8">
         {/* 头像 */}
         <div className="flex flex-col items-center space-y-4">
           {hasPhoto ? (
-            <img
-              src={spirit.photoUrls[0]}
+            <Image
+              src={heroPhoto!}
               alt={spirit.name}
+              width={128}
+              height={128}
+              unoptimized
               className="w-32 h-32 rounded-full object-cover border-4 border-amber-200 shadow-md"
             />
           ) : (
@@ -79,16 +126,57 @@ export default async function SharePage({ params }: Props) {
 
           <div className="text-center space-y-1">
             <h1 className="text-2xl font-light text-stone-700">{spirit.name}</h1>
+            {personality.nickname && (
+              <p className="text-sm text-stone-500">家里常常叫它 {personality.nickname}</p>
+            )}
             <p className="text-sm text-stone-400">
-              {spirit.spiritType.startsWith('pet_') ? '在彼岸世界安好地生活着' : '在彼岸世界静好地存在着'}
+              这里保存着和它有关的照片、故事与想念
             </p>
           </div>
         </div>
 
+        {memorialFacts.length > 0 && (
+          <div className="rounded-2xl bg-white/60 p-5 shadow-sm">
+            <h2 className="text-sm text-stone-400">纪念信息</h2>
+            <div className="mt-3 space-y-3">
+              {memorialFacts.map((fact) => (
+                <div key={fact.label} className="flex items-start justify-between gap-4 border-b border-stone-100 pb-3 last:border-b-0 last:pb-0">
+                  <span className="text-sm text-stone-400">{fact.label}</span>
+                  <span className="text-right text-sm text-stone-700">{fact.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {tags.length > 0 && (
+          <div className="rounded-2xl bg-white/60 p-5 shadow-sm">
+            <h2 className="text-sm text-stone-400">它最像它的样子</h2>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {tags.map((tag: string) => (
+                <span key={tag} className="rounded-full bg-amber-100 px-3 py-1.5 text-sm text-amber-700">
+                  {tag}
+                </span>
+              ))}
+            </div>
+
+            {personalityNotes.length > 0 && (
+              <div className="mt-4 space-y-3">
+                {personalityNotes.map((item) => (
+                  <div key={item.label} className="rounded-2xl bg-stone-50 px-4 py-4">
+                    <p className="text-xs uppercase tracking-[0.18em] text-stone-400">{item.label}</p>
+                    <p className="mt-2 text-sm leading-7 text-stone-600 whitespace-pre-wrap">{item.value}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* 当前状态 */}
         {latestStatus && (
           <div className="bg-white/60 rounded-2xl p-5 text-center shadow-sm">
-            <p className="text-sm text-stone-400 mb-2">此刻</p>
+            <p className="text-sm text-stone-400 mb-2">纪念记录</p>
             <p className="text-lg text-stone-600 leading-relaxed">
               {MOOD_MAP[latestStatus.mood] ?? '😌'} {latestStatus.content}
             </p>
@@ -123,22 +211,36 @@ export default async function SharePage({ params }: Props) {
           </div>
         )}
 
+        {shareablePhotos.length > 1 && (
+          <div className="space-y-3">
+            <h2 className="text-sm text-stone-400 text-center">回忆相册</h2>
+            <div className="grid grid-cols-2 gap-3">
+              {shareablePhotos.slice(1).map((photoUrl, index) => (
+                <div key={photoUrl} className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-white/40 shadow-sm">
+                  <Image
+                    src={photoUrl}
+                    alt={`${spirit.name} 的回忆照片 ${index + 2}`}
+                    fill
+                    unoptimized
+                    sizes="(max-width: 768px) 50vw, 280px"
+                    className="object-cover"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* CTA */}
         <div className="pt-4 space-y-3 text-center">
-          <Link
-            href={`/spirit/${spirit.id}/bless`}
-            className="inline-block py-3 px-8 bg-amber-600 text-white rounded-full hover:bg-amber-700 transition-colors"
-          >
-            🕯️ 为{spirit.name}点一盏灯
-          </Link>
           <Link
             href="/"
             className="block py-3 px-8 border border-stone-300 text-stone-600 rounded-full hover:bg-stone-100 transition-colors"
           >
-            为你的TA创建一个新家
+            为你的 TA 创建纪念空间
           </Link>
           <p className="text-xs text-stone-400 mt-3">
-            仍在 / StillHere — 它们没有离开，只是去了另一个地方
+            仍在 / StillHere - 留下一个可以回来看它的地方
           </p>
         </div>
       </div>

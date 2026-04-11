@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { getAuthUser } from '@/lib/auth'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -8,6 +9,11 @@ const supabase = createClient(
 
 export async function POST(req: NextRequest) {
   try {
+    const user = await getAuthUser(req.headers.get('authorization'))
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const formData = await req.formData()
     const files = formData.getAll('photos') as File[]
 
@@ -15,11 +21,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No files provided' }, { status: 400 })
     }
 
-    const urls: string[] = []
+    const paths: string[] = []
 
     for (const file of files) {
       const ext = file.name.split('.').pop() || 'jpg'
-      const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+      const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
 
       const buffer = Buffer.from(await file.arrayBuffer())
       const { error } = await supabase.storage
@@ -31,14 +37,10 @@ export async function POST(req: NextRequest) {
         continue
       }
 
-      const { data: urlData } = supabase.storage
-        .from('spirit-photos')
-        .getPublicUrl(path)
-
-      urls.push(urlData.publicUrl)
+      paths.push(path)
     }
 
-    return NextResponse.json({ urls })
+    return NextResponse.json({ paths })
   } catch (error) {
     console.error('Upload error:', error)
     return NextResponse.json({ error: 'Upload failed' }, { status: 500 })

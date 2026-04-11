@@ -802,7 +802,7 @@ export default function PixelPetEngine({ spiritType, mood, homeStyle, name, stat
     if (showBubble && statusText) {
       drawBubble(ctx, petX, petY - 45, statusText, w * 0.6)
     }
-  }, [homeStyle, spiritType, name, statusText, showBubble])
+  }, [decor, homeStyle, spiritType, name, statusText, showBubble])
 
   useEffect(() => {
     const canvas = canvasRef.current

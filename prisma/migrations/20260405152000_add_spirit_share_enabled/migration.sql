@@ -1,0 +1,2 @@
+ALTER TABLE "spirits"
+ADD COLUMN IF NOT EXISTS "share_enabled" BOOLEAN NOT NULL DEFAULT false;

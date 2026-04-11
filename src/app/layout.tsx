@@ -18,7 +18,7 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: "仍在 / Stillhere",
-  description: "它们没有离开，只是去了另一个地方。",
+  description: "一个给离开的宠物留纪念空间的小网站，默认私密，你可以放照片、名字、习惯和故事，以后想它的时候还能回来看看。",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,

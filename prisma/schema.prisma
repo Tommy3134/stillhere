@@ -19,6 +19,7 @@ model User {
   spirits       Spirit[]
   messages      Message[]
   blessings     Blessing[]
+  feedbacks     FeedbackSubmission[]
 
   @@map("users")
 }
@@ -33,6 +34,7 @@ model Spirit {
   photoUrls     String[]  @map("photo_urls")
   metadataUri   String?   @map("metadata_uri")
   homeStyle     String    @default("cozy_room") @map("home_style")
+  shareEnabled  Boolean   @default(false) @map("share_enabled")
   isActive      Boolean   @default(true) @map("is_active")
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
@@ -100,4 +102,29 @@ model BlessingItem {
   isActive      Boolean   @default(true) @map("is_active")
 
   @@map("blessing_items")
+}
+
+model FeedbackSubmission {
+  id            String    @id @default(cuid())
+  userId        String?   @map("user_id")
+  source        String
+  sourceLabel   String    @map("source_label")
+  spiritId      String?   @map("spirit_id")
+  spiritName    String?   @map("spirit_name")
+  contextSnapshot Json?   @map("context_snapshot")
+  who           String?
+  feeling       String?
+  comeback      String?
+  feature       String?
+  wanted        String?
+  price         String?
+  share         String?
+  other         String?
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  user          User?     @relation(fields: [userId], references: [id])
+
+  @@index([createdAt])
+  @@index([source, createdAt])
+  @@map("feedback_submissions")
 }
