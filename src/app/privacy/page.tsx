@@ -68,7 +68,7 @@ export default function PrivacyPage() {
         <section className="space-y-3">
           <h2 className="text-xl font-semibold text-stone-800">联系我们</h2>
           <p className="text-stone-700 leading-8">
-            有任何问题:<a href="mailto:jianda.shi@sunhold.com.cn" className="underline underline-offset-4 hover:text-stone-900">jianda.shi@sunhold.com.cn</a>
+            有任何问题:<a href="mailto:jiandalawyer@gmail.com" className="underline underline-offset-4 hover:text-stone-900">jiandalawyer@gmail.com</a>
           </p>
         </section>
 

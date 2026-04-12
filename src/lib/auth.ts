@@ -39,7 +39,8 @@ export async function getAuthUser(authHeader: string | null) {
       })
     }
     return user
-  } catch {
+  } catch (error) {
+    console.error('Auth verification failed:', error instanceof Error ? error.message : error)
     return null
   }
 }
