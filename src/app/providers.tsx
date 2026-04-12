@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 
 function isPublicEntryPath(pathname: string) {
-  if (pathname === '/' || pathname === '/beta' || pathname === '/feedback' || pathname === '/sample') {
+  if (pathname === '/' || pathname === '/beta' || pathname === '/feedback' || pathname === '/sample' || pathname === '/privacy') {
     return true
   }
 

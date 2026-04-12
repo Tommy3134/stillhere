@@ -53,6 +53,10 @@ export default function RootLayout({
                   <span className="font-medium text-stone-700">不上链</span> · 敏感原始内容不会写到任何区块链上
                 </p>
               </div>
+              <div className="mx-auto mt-4 max-w-5xl text-xs leading-6 text-stone-400">
+                <p>StillHere 是纪念空间,不是心理咨询服务。如果你需要专业帮助,请联系专业机构。</p>
+                <p className="mt-1"><a href="/privacy" className="underline underline-offset-2 hover:text-stone-500">隐私政策</a></p>
+              </div>
             </footer>
           </div>
         </Providers>
