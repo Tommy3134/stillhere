@@ -91,10 +91,9 @@ export default function BetaInvitePage() {
           <div className="overflow-hidden rounded-[2rem] bg-white shadow-sm">
             <div className="relative aspect-[16/10]">
               <Image
-                src={defaultSampleMemorial.photoUrls[0]}
+                src={defaultSampleMemorial.heroImageUrl}
                 alt={`${defaultSampleMemorial.name} 的样例纪念照片`}
                 fill
-                unoptimized
                 sizes="(max-width: 768px) 100vw, 700px"
                 className="object-cover"
               />
@@ -103,7 +102,7 @@ export default function BetaInvitePage() {
                 <p className="text-xs uppercase tracking-[0.32em] text-white/70">Sample Memorial</p>
                 <h2 className="mt-3 text-3xl font-light">{defaultSampleMemorial.name}</h2>
                 <p className="mt-3 max-w-xl text-sm leading-7 text-white/80">
-                  {defaultSampleMemorial.summary}
+                  {defaultSampleMemorial.hero.declarationParagraphs[0]}
                 </p>
               </div>
             </div>
@@ -112,7 +111,7 @@ export default function BetaInvitePage() {
               <div className="rounded-2xl bg-amber-50 px-4 py-4">
                 <p className="text-xs uppercase tracking-[0.22em] text-stone-400">它最像它的样子</p>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {defaultSampleMemorial.personality.tags.map((tag) => (
+                  {defaultSampleMemorial.about.facts.slice(0, 3).map((tag) => (
                     <span key={tag} className="rounded-full bg-white px-3 py-1.5 text-sm text-stone-600 shadow-sm">
                       {tag}
                     </span>
@@ -123,7 +122,7 @@ export default function BetaInvitePage() {
               <div className="rounded-2xl bg-stone-50 px-4 py-4">
                 <p className="text-xs uppercase tracking-[0.22em] text-stone-400">最近会想起它的时候</p>
                 <p className="mt-3 text-sm leading-7 text-stone-600">
-                  {defaultSampleMemorial.statuses[0]?.content}
+                  {defaultSampleMemorial.currentMoment.statuses[0]}
                 </p>
               </div>
 

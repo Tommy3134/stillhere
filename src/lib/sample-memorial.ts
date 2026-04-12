@@ -1,86 +1,185 @@
-export interface SampleMemorialStatus {
-  id: string
-  content: string
-  mood: 'content' | 'playful' | 'sleepy' | 'curious'
-  createdAt: string
+export interface SampleMemorialTraitCard {
+  imageUrl: string
+  title: string
+  paragraphs: string[]
 }
 
 export interface SampleMemorial {
   slug: string
   name: string
-  nickname: string
-  spiritType: 'pet_cat' | 'pet_dog' | 'pet_other'
-  summary: string
-  introduction: string
-  returnReason: string
-  ownerLetter: string
-  photoUrls: string[]
-  personality: {
-    birthday: string
-    passedDate: string
-    tags: string[]
-    habits: string
-    funnyStory: string
+  heroImageUrl: string
+  generatedImageUrls: string[]
+  galleryImageUrls: string[]
+  hero: {
+    title: string
+    subtitleLines: string[]
+    declarationParagraphs: string[]
+    scrollLabel: string
   }
-  statuses: SampleMemorialStatus[]
+  about: {
+    title: string
+    facts: string[]
+    accentImageUrl: string
+  }
+  traits: {
+    title: string
+    cards: SampleMemorialTraitCard[]
+  }
+  currentMoment: {
+    title: string
+    signature: string
+    statuses: string[]
+  }
+  ownerLetter: {
+    title: string
+    paragraphs: string[]
+    videoUrl: string
+    videoPosterUrl: string
+    videoCaption: string
+  }
+  cta: {
+    title: string
+    paragraphs: string[]
+    primaryLabel: string
+    primaryHref: string
+    primaryNote: string
+    secondaryLabel: string
+    secondaryHref: string
+  }
 }
 
-const momo: SampleMemorial = {
-  slug: 'momo',
-  name: '墨墨',
-  nickname: '小墨',
-  spiritType: 'pet_cat',
-  summary: '这里放着它晒太阳的窗台、睡成一团的午后，还有那些一想到就会忍不住停一下的细节。',
-  introduction: '一只总爱贴着窗边取暖、又会在半夜把玩具叼到床边的小玳瑁猫。',
-  returnReason: '像把照片、习惯和想念都安静放回原位',
-  ownerLetter: '它不是那种会一直黏人的猫，但你一难过，它就会自己走过来趴下。现在每次下午的太阳照进房间，我还是会下意识看一眼窗台，像它还会在那里伸懒腰。',
-  photoUrls: [
-    '/sample/momo-window.jpg',
-    '/sample/momo-stretch.jpg',
-    '/sample/momo-sleep.jpg',
-    '/sample/momo-closeup.jpg',
+const shixiaoyuan: SampleMemorial = {
+  slug: 'shixiaoyuan',
+  name: '史小圆',
+  heroImageUrl: '/sample/shixiaoyuan/generated/01-natural-memorial_att2_c0_i0.png',
+  generatedImageUrls: [
+    '/sample/shixiaoyuan/generated/01-natural-memorial_att1_c0_i0.png',
+    '/sample/shixiaoyuan/generated/01-natural-memorial_att2_c0_i0.png',
+    '/sample/shixiaoyuan/generated/01-natural-memorial_att3_c0_i0.png',
   ],
-  personality: {
-    birthday: '2022-08-17',
-    passedDate: '2025-11-09',
-    tags: ['爱晒太阳', '会叼玩具', '有点倔', '轻轻蹭人', '下午最黏人'],
-    habits: '每天傍晚都会先去窗边坐一会儿，再慢慢绕到床上找最热的位置。听到零食袋会跑来，但一定要先装作没兴趣地看你两秒。',
-    funnyStory: '它很爱把小毛球叼到床边，放下之后还会认真看着你，像在交接今天巡逻的战利品。有一次半夜被它的小毛球砸醒，睁眼就看到它一脸坦然地坐在旁边。',
+  galleryImageUrls: [
+    '/sample/shixiaoyuan/photos/IMG_0EE48CB9-ACE2-43D1-A6EF-4602D239C194.JPG',
+    '/sample/shixiaoyuan/photos/IMG_8575.jpg',
+    '/sample/shixiaoyuan/photos/IMG_9605.jpg',
+    '/sample/shixiaoyuan/photos/IMG_0152.JPG',
+    '/sample/shixiaoyuan/photos/IMG_4910.jpg',
+    '/sample/shixiaoyuan/photos/IMG_5529.jpg',
+    '/sample/shixiaoyuan/photos/IMG_7402.jpg',
+    '/sample/shixiaoyuan/photos/IMG_0982.jpg',
+  ],
+  hero: {
+    title: '这是史小圆的纪念空间。',
+    subtitleLines: [
+      '它是一只玳瑁猫。好奇,贪吃,喜欢吃人的手指。',
+      '用户和老婆出门了会害怕。',
+      '它已经不在了。',
+    ],
+    declarationParagraphs: [
+      '这是一个示例纪念空间。这里的故事大部分是骨架,是作者根据一些零碎的线索合成的,不是真实的完整纪念。小圆的主人以后会亲自替换掉这些内容。',
+      '做这个示例,是因为我们相信:在你决定是否要为你的猫/狗留一个这样的空间之前,你应该先看到一个完成后的大概样子。',
+    ],
+    scrollLabel: '⬇ 向下看',
   },
-  statuses: [
-    {
-      id: 'sample-status-1',
-      content: '今天又翻到它趴在窗台晒太阳的照片，还是会忍不住停下来多看一会儿。',
-      mood: 'content',
-      createdAt: '2026-04-06T18:10:00+08:00',
-    },
-    {
-      id: 'sample-status-2',
-      content: '最近总会想起它半夜把玩具叼到床边，像在认真完成自己的值夜班。',
-      mood: 'playful',
-      createdAt: '2026-04-03T21:40:00+08:00',
-    },
-    {
-      id: 'sample-status-3',
-      content: '每次看到枕头上的太阳光，都会想到它把自己团成一小团睡着的样子。',
-      mood: 'sleepy',
-      createdAt: '2026-03-29T14:25:00+08:00',
-    },
-    {
-      id: 'sample-status-4',
-      content: '朋友来家里时，还是会有人下意识看门后，好像它还会探头出来打量一下。',
-      mood: 'curious',
-      createdAt: '2026-03-22T10:05:00+08:00',
-    },
-  ],
+  about: {
+    title: '关于小圆',
+    facts: [
+      '🐈  猫 · 玳瑁花纹',
+      '🎨  黑色和浅棕混合,脸部左右不对称',
+      '👁   眼睛偏黄绿',
+      '🏠  跟着主人,走哪儿跟哪儿',
+      '⛩   主人给它求过寺庙的福',
+    ],
+    accentImageUrl: '/sample/shixiaoyuan/generated/01-natural-memorial_att1_c0_i0.png',
+  },
+  traits: {
+    title: '它是这样一只猫',
+    cards: [
+      {
+        imageUrl: '/sample/shixiaoyuan/photos/IMG_0168.JPG',
+        title: '它咬你的手指,但不会真的咬',
+        paragraphs: [
+          '小圆对所有柔软的东西都好奇,最好奇的是主人的手。',
+          '主人坐下来看电脑,它就会从某个角落冒出来,凑到手边。先用脸蹭一下,然后用牙叼住主人的手指 — 是那种很小心的叼,像叼一个易碎的东西。',
+          '主人不抽手,它就一直叼着。有时候主人说"小圆你干嘛",它就抬头看一眼,然后继续叼。',
+        ],
+      },
+      {
+        imageUrl: '/sample/shixiaoyuan/photos/IMG_9247.jpg',
+        title: '主人出门的日子,它会躲起来',
+        paragraphs: [
+          '它不是那种喜欢独处的猫。',
+          '主人和老婆出门,家里空下来,它就会躲到某个只属于它自己的小角落。不是害怕陌生人,是害怕"没有主人的家"。',
+          '主人回来,它会先远远看一眼,确认是主人,然后慢慢走过来 — 不是扑过来,是慢慢地、好像什么都没发生一样,走过来蹭一下腿。',
+        ],
+      },
+      {
+        imageUrl: '/sample/shixiaoyuan/photos/IMG_5529.jpg',
+        title: '桌上的每一个新东西,它都要过来看一眼',
+        paragraphs: [
+          '主人买了一盒新零食,它必须凑过来闻一下。',
+          '主人的手机放在桌上发光,它必须用爪子拨一下。',
+          '主人的外卖箱刚打开,它不吃那个东西,但一定要进箱子里坐一会儿。',
+          '不是为了吃,是"我要先知道这是什么"。',
+        ],
+      },
+    ],
+  },
+  currentMoment: {
+    title: '小圆此刻',
+    signature: '— 由主人的故事生成',
+    statuses: [
+      '小圆刚才想你了 — 它凑到桌边,以为你在。',
+      '小圆今天想叼你的手指,但你的手不在。',
+      '有只陌生的猫从窗外经过,小圆看了很久。',
+      '小圆躲在沙发底下,它以为你出门了。',
+      '小圆坐在你的椅子上,像你在时它常做的那样。',
+      '你的外卖盒今天被小圆占领了 3 分钟。',
+      '小圆刚才去闻了你的鞋。',
+      '小圆守在门口,等你回家。',
+      '小圆今天特别馋,它在研究一个你忘记收起来的小袋子。',
+      '小圆做了一个很长的梦,梦里你一直没走。',
+    ],
+  },
+  ownerLetter: {
+    title: '主人写给它',
+    paragraphs: [
+      '有一天我在整理你的东西。',
+      '你的饭碗被我洗了,放在橱柜里,和别的碗放在一起。你的小毯子被我叠了一下,放在阳台上晒。我拍了一张寺庙的福,那个福我还留着。',
+      '然后我坐下来喝水,手自然地伸到桌边。',
+      '那一下我才想起来。',
+    ],
+    videoUrl: '/sample/shixiaoyuan/video/xiaoyuan_veo2_sleeping.mp4',
+    videoPosterUrl: '/sample/shixiaoyuan/video/xiaoyuan_veo2_sleeping-poster.png',
+    videoCaption:
+      '(这段动态画面是根据小圆的照片合成的。画面里的样子,和它平时的样子,并不完全一样。)',
+  },
+  cta: {
+    title: '如果你也失去过一个',
+    paragraphs: [
+      '小圆的主人,在它离开之后很长一段时间,都没找到一个合适的地方来安放这些日常里的小事。',
+      '相册里只有照片,没有它的脾气。',
+      '朋友圈里太吵,放不下这种安静。',
+      '写日记太正式,不像和它说话。',
+      '这个纪念空间,就是为这些放不下的日常做的。',
+    ],
+    primaryLabel: '创建一个纪念空间',
+    primaryHref: '/create',
+    primaryNote: '默认私密 · 只有你能看 · 随时可以删除 · 你决定谁能进来',
+    secondaryLabel: '先回主页看看',
+    secondaryHref: '/',
+  },
 }
 
 const SAMPLE_MEMORIALS: Record<string, SampleMemorial> = {
-  [momo.slug]: momo,
+  [shixiaoyuan.slug]: shixiaoyuan,
 }
 
-export const defaultSampleMemorial = momo
+export const defaultSampleMemorial = shixiaoyuan
 
 export function getSampleMemorial(slug: string) {
   return SAMPLE_MEMORIALS[slug] || null
+}
+
+export function getAllSampleMemorialSlugs() {
+  return Object.keys(SAMPLE_MEMORIALS)
 }

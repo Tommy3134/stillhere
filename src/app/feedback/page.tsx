@@ -99,7 +99,7 @@ function getFeedbackSourceConfig(source: string, spiritId: string): FeedbackSour
           { v: 'family_share', l: '👥 更适合发给亲友的体验' },
           { v: 'return_reason', l: '🔁 更强的回来看理由' },
         ],
-        returnHref: '/sample/momo',
+        returnHref: '/sample/shixiaoyuan',
         returnLabel: '回到样例纪念空间',
       }
     case 'dashboard':

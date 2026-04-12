@@ -2,27 +2,19 @@ import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { getSampleMemorial } from '@/lib/sample-memorial'
+import { RandomStatusCard } from './RandomStatusCard'
+import { getAllSampleMemorialSlugs, getSampleMemorial } from '@/lib/sample-memorial'
 
-const MOOD_MAP: Record<string, string> = {
-  content: '😌',
-  playful: '🎾',
-  sleepy: '😴',
-  curious: '🔍',
-}
-
-function formatMemorialDate(date: string) {
-  return new Intl.DateTimeFormat('zh-CN', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  }).format(new Date(`${date}T00:00:00`))
-}
+const sampleMetadataBase = new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000')
 
 type Props = {
   params: {
     slug: string
   }
+}
+
+export function generateStaticParams() {
+  return getAllSampleMemorialSlugs().map((slug) => ({ slug }))
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -33,12 +25,26 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   return {
-    title: `${memorial.name} 的样例纪念空间 | StillHere`,
-    description: memorial.summary,
+    metadataBase: sampleMetadataBase,
+    title: '史小圆的纪念空间 · StillHere 示例',
+    description: memorial.hero.declarationParagraphs[0],
+    alternates: {
+      canonical: `/sample/${memorial.slug}`,
+    },
+    robots: {
+      index: false,
+      follow: false,
+    },
     openGraph: {
-      title: `${memorial.name} 的样例纪念空间 | StillHere`,
-      description: memorial.summary,
-      images: [{ url: memorial.photoUrls[0] }],
+      title: '史小圆的纪念空间 · StillHere 示例',
+      description: memorial.hero.declarationParagraphs[0],
+      url: `/sample/${memorial.slug}`,
+      images: [
+        {
+          url: memorial.heroImageUrl,
+          alt: memorial.hero.title,
+        },
+      ],
     },
   }
 }
@@ -50,156 +56,100 @@ export default function SampleMemorialPage({ params }: Props) {
     notFound()
   }
 
-  const latestStatus = memorial.statuses[0]
-  const feedbackHref = `/feedback?${new URLSearchParams({
-    source: 'sample_memorial',
-    spiritName: memorial.name,
-    photoCount: String(memorial.photoUrls.length),
-    shareEnabled: '1',
-    returnReason: memorial.returnReason,
-  }).toString()}`
-
   return (
-    <main className="min-h-screen bg-gradient-to-b from-amber-50 via-orange-50 to-stone-100 px-6 py-10">
-      <div className="mx-auto max-w-5xl space-y-8">
-        <section className="rounded-[2rem] border border-white/70 bg-white/85 px-6 py-6 shadow-sm backdrop-blur">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-[0.32em] text-stone-400">Sample Memorial</p>
-              <h1 className="mt-3 text-3xl font-light text-stone-700 md:text-4xl">
-                这是一个免登录样例纪念空间
+    <main
+      className="min-h-screen bg-[#f6f2ea] px-6 py-8 text-stone-800 md:px-8 md:py-10"
+      style={{
+        fontFamily:
+          '"Songti SC", "STSong", "Noto Serif SC", "Source Han Serif SC", ui-serif, Georgia, Cambria, "Times New Roman", serif',
+      }}
+    >
+      <div className="mx-auto max-w-6xl">
+        <section className="flex min-h-[100svh] items-center py-6 md:py-10">
+          <div className="grid w-full gap-10 lg:grid-cols-[minmax(0,0.95fr)_minmax(360px,0.9fr)] lg:items-end">
+            <div className="order-2 max-w-3xl lg:order-1">
+              <h1 className="whitespace-nowrap text-[clamp(1.65rem,6.2vw,5.2rem)] font-semibold leading-none tracking-[-0.04em] text-stone-800">
+                {memorial.hero.title}
               </h1>
-              <p className="mt-3 max-w-3xl text-sm leading-7 text-stone-500 md:text-base">
-                这页是为了让你先看到完成态大概是什么样，再决定 StillHere 值不值得你登录去创建自己的版本。
-                真实创建时，纪念空间默认仍然是私密的。
-              </p>
+
+              <div className="mt-8 space-y-3 text-base leading-8 text-stone-600 md:text-xl md:leading-10">
+                {memorial.hero.subtitleLines.map((line) => (
+                  <p key={line}>{line}</p>
+                ))}
+              </div>
+
+              <div className="mt-10 max-w-2xl space-y-5 text-sm leading-7 text-stone-500 md:text-base md:leading-8">
+                <p>{memorial.hero.declarationParagraphs[0]}</p>
+                <p>
+                  做这个示例,是因为我们相信:
+                  <strong className="font-semibold text-stone-700">
+                    在你决定是否要为你的猫/狗留一个这样的空间之前,你应该先看到一个完成后的大概样子。
+                  </strong>
+                </p>
+              </div>
+
+              <p className="mt-14 text-sm tracking-[0.22em] text-stone-400">{memorial.hero.scrollLabel}</p>
             </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row md:flex-col">
-              <Link
-                href={feedbackHref}
-                className="inline-flex justify-center rounded-full bg-amber-600 px-6 py-3 text-white transition-colors hover:bg-amber-700"
-              >
-                这个样例像不像成品
-              </Link>
-              <Link
-                href="/create"
-                className="inline-flex justify-center rounded-full border border-stone-300 px-6 py-3 text-stone-600 transition-colors hover:bg-stone-100"
-              >
-                登录后创建自己的纪念空间
-              </Link>
-              <Link
-                href="/beta"
-                className="inline-flex justify-center rounded-full border border-dashed border-stone-300 px-6 py-3 text-stone-500 transition-colors hover:bg-stone-100"
-              >
-                回到外测入口
-              </Link>
+            <div className="order-1 lg:order-2">
+              <div className="relative overflow-hidden rounded-[2.5rem] border border-stone-200/70 bg-white shadow-[0_28px_100px_rgba(89,69,41,0.12)]">
+                <div className="relative aspect-[7/5]">
+                  <Image
+                    src={memorial.heroImageUrl}
+                    alt="史小圆的示例纪念像"
+                    fill
+                    priority
+                    sizes="(max-width: 1024px) 100vw, 48vw"
+                    className="object-cover"
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </section>
 
-        <section className="overflow-hidden rounded-[2.5rem] bg-white/85 shadow-sm backdrop-blur">
-          <div className="relative aspect-[16/9] min-h-[320px]">
-            <Image
-              src={memorial.photoUrls[0]}
-              alt={`${memorial.name} 的纪念照片`}
-              fill
-              unoptimized
-              sizes="(max-width: 1024px) 100vw, 1100px"
-              className="object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-stone-900/75 via-stone-900/20 to-transparent" />
-            <div className="absolute inset-x-0 bottom-0 p-8 text-white">
-              <p className="text-xs uppercase tracking-[0.32em] text-white/70">StillHere Sample</p>
-              <h2 className="mt-3 text-4xl font-light md:text-5xl">{memorial.name}</h2>
-              <p className="mt-3 text-base text-white/80">家里常常叫它 {memorial.nickname}</p>
-              <p className="mt-4 max-w-2xl text-sm leading-7 text-white/85 md:text-base">
-                {memorial.summary}
-              </p>
-            </div>
-          </div>
+        <section className="py-24 md:py-32">
+          <div className="grid gap-10 lg:grid-cols-[minmax(280px,0.62fr)_minmax(0,1fr)] lg:items-start">
+            <div className="rounded-[2.25rem] border border-stone-200/70 bg-white px-6 py-7 shadow-[0_24px_80px_rgba(90,72,42,0.08)] md:px-8 md:py-8">
+              <h2 className="text-3xl font-semibold tracking-[-0.03em] text-stone-800 md:text-4xl">
+                {memorial.about.title}
+              </h2>
 
-          <div className="grid gap-4 p-6 md:grid-cols-3">
-            <div className="rounded-2xl bg-amber-50/80 p-5">
-              <p className="text-xs uppercase tracking-[0.24em] text-stone-400">纪念信息</p>
-              <div className="mt-3 space-y-3 text-sm leading-7 text-stone-600">
-                <p>生日：{formatMemorialDate(memorial.personality.birthday)}</p>
-                <p>离开的日子：{formatMemorialDate(memorial.personality.passedDate)}</p>
-                <p>它是：{memorial.introduction}</p>
+              <div className="mt-7 overflow-hidden rounded-[1.8rem] bg-[#f3ede2]">
+                <div className="relative aspect-[4/5]">
+                  <Image
+                    src={memorial.about.accentImageUrl}
+                    alt="史小圆的生成纪念像"
+                    fill
+                    sizes="(max-width: 1024px) 100vw, 360px"
+                    className="object-cover"
+                  />
+                </div>
               </div>
-            </div>
 
-            <div className="rounded-2xl bg-amber-50/80 p-5">
-              <p className="text-xs uppercase tracking-[0.24em] text-stone-400">它最像它的样子</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {memorial.personality.tags.map((tag) => (
-                  <span key={tag} className="rounded-full bg-white px-3 py-1.5 text-sm text-stone-600 shadow-sm">
-                    {tag}
-                  </span>
+              <div className="mt-7 space-y-3 text-base leading-8 text-stone-600">
+                {memorial.about.facts.map((fact) => (
+                  <p key={fact} className="whitespace-pre-wrap">
+                    {fact}
+                  </p>
                 ))}
               </div>
             </div>
 
-            <div className="rounded-2xl bg-amber-50/80 p-5">
-              <p className="text-xs uppercase tracking-[0.24em] text-stone-400">最近会回来看的理由</p>
-              <p className="mt-3 text-sm leading-7 text-stone-600">{memorial.returnReason}</p>
-              {latestStatus && (
-                <p className="mt-3 text-sm leading-7 text-stone-500">
-                  {MOOD_MAP[latestStatus.mood] ?? '😌'} {latestStatus.content}
-                </p>
-              )}
-            </div>
-          </div>
-        </section>
-
-        <section className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-          <div className="space-y-6">
-            <div className="rounded-[2rem] bg-white p-6 shadow-sm">
-              <p className="text-xs uppercase tracking-[0.24em] text-stone-400">习惯和怪癖</p>
-              <p className="mt-4 text-sm leading-8 text-stone-600">{memorial.personality.habits}</p>
-            </div>
-
-            <div className="rounded-[2rem] bg-white p-6 shadow-sm">
-              <p className="text-xs uppercase tracking-[0.24em] text-stone-400">最让人笑的一件事</p>
-              <p className="mt-4 text-sm leading-8 text-stone-600">{memorial.personality.funnyStory}</p>
-            </div>
-
-            <div className="rounded-[2rem] bg-stone-900 px-6 py-6 text-sm leading-8 text-stone-200 shadow-sm">
-              “{memorial.ownerLetter}”
-            </div>
-          </div>
-
-          <div className="rounded-[2rem] bg-white p-6 shadow-sm">
-            <p className="text-xs uppercase tracking-[0.24em] text-stone-400">回忆相册</p>
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              {memorial.photoUrls.slice(1).map((photoUrl, index) => (
-                <div key={photoUrl} className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-stone-100">
-                  <Image
-                    src={photoUrl}
-                    alt={`${memorial.name} 的回忆照片 ${index + 2}`}
-                    fill
-                    unoptimized
-                    sizes="(max-width: 1024px) 100vw, 320px"
-                    className="object-cover"
-                  />
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-6 rounded-2xl bg-stone-50 px-4 py-4">
-              <p className="text-xs uppercase tracking-[0.22em] text-stone-400">最近纪念记录</p>
-              <div className="mt-4 space-y-3">
-                {memorial.statuses.map((status) => (
-                  <div key={status.id} className="rounded-2xl bg-white px-4 py-4 shadow-sm">
-                    <p className="text-sm leading-7 text-stone-600">
-                      {MOOD_MAP[status.mood] ?? '😌'} {status.content}
-                    </p>
-                    <p className="mt-2 text-xs text-stone-400">
-                      {new Date(status.createdAt).toLocaleDateString('zh-CN', {
-                        month: 'long',
-                        day: 'numeric',
-                      })}
-                    </p>
+            <div className="overflow-x-auto pb-4">
+              <div className="flex min-w-max gap-4 md:gap-5">
+                {memorial.galleryImageUrls.map((photoUrl, index) => (
+                  <div
+                    key={photoUrl}
+                    className="relative h-[320px] w-[240px] shrink-0 overflow-hidden rounded-[1.9rem] border border-stone-200/70 bg-white shadow-[0_20px_60px_rgba(90,72,42,0.08)] md:h-[380px] md:w-[285px]"
+                  >
+                    <Image
+                      src={photoUrl}
+                      alt={`史小圆的照片 ${index + 1}`}
+                      fill
+                      sizes="(max-width: 768px) 70vw, 285px"
+                      className="object-cover"
+                    />
                   </div>
                 ))}
               </div>
@@ -207,29 +157,118 @@ export default function SampleMemorialPage({ params }: Props) {
           </div>
         </section>
 
-        <section className="rounded-[2rem] bg-white px-6 py-6 shadow-sm">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-[0.24em] text-stone-400">真实创建时的边界</p>
-              <p className="mt-3 max-w-2xl text-sm leading-7 text-stone-500">
-                样例页是公开展示给你看的完成态，但真实创建时纪念空间默认私密。只有你主动开启，才会生成能发给亲友的分享页；你也可以导出和删除。
-              </p>
+        <section className="py-24 md:py-32">
+          <div className="max-w-3xl">
+            <h2 className="text-3xl font-semibold tracking-[-0.03em] text-stone-800 md:text-4xl">
+              {memorial.traits.title}
+            </h2>
+          </div>
+
+          <div className="mt-10 grid gap-8 lg:grid-cols-3">
+            {memorial.traits.cards.map((card) => (
+              <article
+                key={card.title}
+                className="overflow-hidden rounded-[2.25rem] border border-stone-200/70 bg-white shadow-[0_24px_80px_rgba(90,72,42,0.08)]"
+              >
+                <div className="relative aspect-[4/3]">
+                  <Image
+                    src={card.imageUrl}
+                    alt={card.title}
+                    fill
+                    sizes="(max-width: 1024px) 100vw, 33vw"
+                    className="object-cover"
+                  />
+                </div>
+                <div className="px-6 py-7 md:px-7">
+                  <h3 className="text-2xl font-semibold leading-tight tracking-[-0.03em] text-stone-800">
+                    {card.title}
+                  </h3>
+                  <div className="mt-6 space-y-4 text-base leading-8 text-stone-600">
+                    {card.paragraphs.map((paragraph) => (
+                      <p key={paragraph}>{paragraph}</p>
+                    ))}
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="py-24 md:py-32">
+          <div className="mx-auto max-w-3xl text-center">
+            <h2 className="text-3xl font-semibold tracking-[-0.03em] text-stone-800 md:text-4xl">
+              {memorial.currentMoment.title}
+            </h2>
+          </div>
+
+          <div className="mx-auto mt-10 max-w-3xl">
+            <RandomStatusCard
+              statuses={memorial.currentMoment.statuses}
+              signature={memorial.currentMoment.signature}
+            />
+          </div>
+        </section>
+
+        <section className="py-24 md:py-32">
+          <div className="grid gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(300px,0.82fr)] lg:items-start">
+            <div className="rounded-[2.25rem] border border-stone-200/70 bg-white px-6 py-7 shadow-[0_24px_80px_rgba(90,72,42,0.08)] md:px-8 md:py-9">
+              <h2 className="text-3xl font-semibold tracking-[-0.03em] text-stone-800 md:text-4xl">
+                {memorial.ownerLetter.title}
+              </h2>
+
+              <div className="mt-8 space-y-5 text-lg leading-9 text-stone-600 md:text-xl md:leading-10">
+                {memorial.ownerLetter.paragraphs.map((paragraph) => (
+                  <p key={paragraph}>{paragraph}</p>
+                ))}
+              </div>
             </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row">
+            <div className="space-y-5">
+              <div className="overflow-hidden rounded-[2.25rem] border border-stone-200/70 bg-white shadow-[0_24px_80px_rgba(90,72,42,0.08)]">
+                <video
+                  className="aspect-video w-full bg-stone-200 object-cover"
+                  controls
+                  preload="none"
+                  poster={memorial.ownerLetter.videoPosterUrl}
+                >
+                  <source src={memorial.ownerLetter.videoUrl} type="video/mp4" />
+                </video>
+              </div>
+              <p className="text-sm leading-7 text-stone-500">{memorial.ownerLetter.videoCaption}</p>
+            </div>
+          </div>
+        </section>
+
+        <section className="py-24 md:py-32">
+          <div className="rounded-[2.4rem] border border-stone-200/70 bg-white px-6 py-8 shadow-[0_28px_90px_rgba(90,72,42,0.1)] md:px-10 md:py-10">
+            <div className="max-w-4xl">
+              <h2 className="text-3xl font-semibold tracking-[-0.03em] text-stone-800 md:text-5xl">
+                {memorial.cta.title}
+              </h2>
+
+              <div className="mt-8 space-y-4 text-lg leading-9 text-stone-600 md:text-xl md:leading-10">
+                {memorial.cta.paragraphs.map((paragraph) => (
+                  <p key={paragraph}>{paragraph}</p>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-10 flex flex-col gap-4 md:flex-row md:flex-wrap md:items-center">
               <Link
-                href={feedbackHref}
-                className="inline-flex justify-center rounded-full bg-amber-600 px-6 py-3 text-white transition-colors hover:bg-amber-700"
+                href={memorial.cta.primaryHref}
+                className="inline-flex justify-center rounded-full bg-stone-900 px-8 py-3 text-base text-white transition-colors hover:bg-stone-700"
               >
-                告诉我们这个样例哪里像、哪里不像
+                {memorial.cta.primaryLabel}
               </Link>
               <Link
-                href="/create"
-                className="inline-flex justify-center rounded-full border border-stone-300 px-6 py-3 text-stone-600 transition-colors hover:bg-stone-100"
+                href={memorial.cta.secondaryHref}
+                className="inline-flex justify-center rounded-full border border-stone-300 px-8 py-3 text-base text-stone-700 transition-colors hover:bg-stone-100"
               >
-                我也想为自己的 TA 留一个
+                {memorial.cta.secondaryLabel}
               </Link>
             </div>
+
+            <p className="mt-5 text-sm leading-7 text-stone-500">{memorial.cta.primaryNote}</p>
           </div>
         </section>
       </div>
