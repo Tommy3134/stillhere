@@ -300,6 +300,9 @@ export default function ChatPage({ params }: { params: { spiritId: string } }) {
               <MessageBubble key={message.id} {...message} spiritType={spiritInfo?.spiritType} />
             ))}
           </div>
+          <div className="px-4 pb-3 text-center text-xs leading-6 text-stone-400">
+            StillHere 不做&quot;数字复活&quot;。我们记住你讲的故事,帮你把它放在一个地方。AI 的角色是整理和回放,不是复活。
+          </div>
           <ChatInput onSend={handleSend} placeholder="说点什么..." />
         </div>
       </main>

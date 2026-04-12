@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePrivy } from '@privy-io/react-auth'
@@ -65,6 +65,7 @@ function formatMemorialDate(date: string) {
 
 export default function SpiritPage({ params }: { params: { id: string } }) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { ready, authenticated } = usePrivy()
   const authFetch = useAuthFetch()
   const [spirit, setSpirit] = useState<Spirit | null>(null)
@@ -84,6 +85,8 @@ export default function SpiritPage({ params }: { params: { id: string } }) {
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [deleteConfirmValue, setDeleteConfirmValue] = useState('')
+  const [shareUrl, setShareUrl] = useState('')
+  const [showCreatedNotice, setShowCreatedNotice] = useState(false)
 
   useEffect(() => {
     setPageError('')
@@ -113,6 +116,15 @@ export default function SpiritPage({ params }: { params: { id: string } }) {
       })
       .finally(() => setLoading(false))
   }, [ready, authenticated, authFetch, params.id])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    setShareUrl(`${window.location.origin}/share/${params.id}`)
+  }, [params.id])
+
+  useEffect(() => {
+    setShowCreatedNotice(searchParams.get('created') === '1')
+  }, [searchParams])
 
   if (!ready) {
     return (
@@ -230,7 +242,7 @@ export default function SpiritPage({ params }: { params: { id: string } }) {
 
   const copyShareLink = async () => {
     try {
-      await navigator.clipboard.writeText(`${window.location.origin}/share/${spirit.id}`)
+      await navigator.clipboard.writeText(shareUrl || `${window.location.origin}/share/${spirit.id}`)
       setShareNotice('纪念页链接已复制。')
       setShareError('')
     } catch {
@@ -261,7 +273,7 @@ export default function SpiritPage({ params }: { params: { id: string } }) {
       link.click()
       link.remove()
       window.URL.revokeObjectURL(url)
-      setDataNotice('纪念备份已开始下载。')
+      setDataNotice('备份文件已开始下载。')
     } catch (error) {
       setDataError(error instanceof Error ? error.message : '导出失败')
     } finally {
@@ -400,43 +412,99 @@ export default function SpiritPage({ params }: { params: { id: string } }) {
             >
               返回我的空间
             </button>
+            <div className="group relative">
+              <Link
+                href={`/chat/${spirit.id}`}
+                className="block rounded-full border border-stone-300 px-5 py-3 text-center text-sm text-stone-600 transition-colors hover:bg-stone-100"
+              >
+                进入实验性聊天模式
+              </Link>
+              <div className="pointer-events-none absolute left-0 right-0 top-full z-10 mt-3 rounded-2xl bg-stone-900 px-4 py-4 text-left text-xs leading-6 text-stone-100 opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+                <p>这是一个实验性的聊天模式。</p>
+                <p className="mt-2">
+                  AI 会根据你讲过的故事合成回复,但 <span className="font-medium">这不是它真的在说话</span>。如果你现在情绪脆弱,不建议使用。
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {showCreatedNotice && (
+          <div className="mb-8 rounded-2xl bg-white px-5 py-5 shadow-sm">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm leading-7 text-stone-500">你已经创建好 TA 的纪念空间。</p>
+                <p className="mt-3 text-sm leading-7 text-stone-500">
+                  现在只有你能进来。<span className="font-medium text-stone-700">想什么时候回来都可以</span>。
+                </p>
+                <p className="mt-3 text-sm leading-7 text-stone-500">
+                  如果你想让某个亲友也能进来看 — 你可以到 <code className="rounded bg-stone-100 px-1.5 py-0.5 text-xs text-stone-600">设置 → 分享</code> 生成一个分享链接。你可以随时关掉这个链接,让它失效。
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCreatedNotice(false)
+                  router.replace(`/spirit/${spirit.id}`)
+                }}
+                className="shrink-0 text-xs text-stone-500 underline underline-offset-4"
+              >
+                关闭
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="mb-8 rounded-2xl bg-white p-5 shadow-sm">
+          <p className="text-sm leading-7 text-stone-500">
+            <span className="font-medium text-stone-700">分享给亲友</span>
+          </p>
+          <p className="mt-3 text-sm leading-7 text-stone-500">
+            生成一个链接,发给你信任的人。通过这个链接,他们可以看到这个纪念空间 — 但不能修改,不能留言(除非你允许),也不能再分享给别人(他们可以把链接转发,但拿到链接的人也需要这个链接才能进来)。
+          </p>
+          <div className="mt-5 rounded-2xl bg-stone-50 px-4 py-4">
             {spirit.shareEnabled ? (
               <>
-                <Link
-                  href={`/share/${spirit.id}`}
-                  className="rounded-full border border-stone-300 px-5 py-3 text-center text-sm text-stone-600 transition-colors hover:bg-stone-100"
-                >
-                  打开纪念页
-                </Link>
-                <button
-                  onClick={copyShareLink}
-                  className="rounded-full border border-stone-300 px-5 py-3 text-sm text-stone-600 transition-colors hover:bg-stone-100"
-                >
-                  复制分享链接
-                </button>
-                <button
-                  onClick={() => toggleShare(false)}
-                  disabled={updatingShare}
-                  className="rounded-full border border-stone-300 px-5 py-3 text-sm text-stone-500 transition-colors hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {updatingShare ? '更新中...' : '关闭亲友分享'}
-                </button>
+                <p className="text-sm leading-7 text-stone-500">🔗 <span className="font-medium text-stone-700">分享链接已生成</span></p>
+                <p className="mt-3 break-all text-sm leading-7 text-stone-500">链接:{shareUrl || `/share/${spirit.id}`}</p>
+                <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                  <button
+                    onClick={copyShareLink}
+                    className="rounded-full border border-stone-300 px-5 py-3 text-sm text-stone-600 transition-colors hover:bg-stone-100"
+                  >
+                    复制链接
+                  </button>
+                  <button
+                    onClick={() => toggleShare(false)}
+                    disabled={updatingShare}
+                    className="rounded-full border border-stone-300 px-5 py-3 text-sm text-stone-600 transition-colors hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {updatingShare ? '关闭中...' : '关闭分享'}
+                  </button>
+                  <Link
+                    href={`/share/${spirit.id}`}
+                    className="rounded-full border border-stone-300 px-5 py-3 text-center text-sm text-stone-600 transition-colors hover:bg-stone-100"
+                  >
+                    打开分享页
+                  </Link>
+                </div>
+                <p className="mt-4 text-sm leading-7 text-stone-500">
+                  关闭分享后,链接立刻失效 — 即使已经有人拿到了,也打不开。
+                </p>
               </>
             ) : (
-              <button
-                onClick={() => toggleShare(true)}
-                disabled={updatingShare}
-                className="rounded-full border border-dashed border-amber-400 px-5 py-3 text-sm text-amber-700 transition-colors hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {updatingShare ? '开启中...' : '开启给亲友的纪念页'}
-              </button>
+              <>
+                <p className="text-sm leading-7 text-stone-500">🔒 <span className="font-medium text-stone-700">当前只有你能看</span></p>
+                <button
+                  onClick={() => toggleShare(true)}
+                  disabled={updatingShare}
+                  className="mt-4 rounded-full border border-dashed border-amber-400 px-5 py-3 text-sm text-amber-700 transition-colors hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {updatingShare ? '生成中...' : '生成分享链接'}
+                </button>
+              </>
             )}
           </div>
-          <p className="mt-3 text-xs leading-6 text-stone-400">
-            {spirit.shareEnabled
-              ? '当前纪念页可通过专属链接访问，搜索引擎不会收录。你仍然可以随时关闭它。'
-              : '分享默认关闭。只有你主动开启后，亲友才能通过纪念页链接进入。'}
-          </p>
           {shareNotice && <p className="mt-3 text-xs leading-6 text-emerald-600">{shareNotice}</p>}
           {shareError && <p className="mt-3 text-xs leading-6 text-red-500">{shareError}</p>}
         </div>
@@ -607,9 +675,12 @@ export default function SpiritPage({ params }: { params: { id: string } }) {
         )}
 
         <div className="mb-8 rounded-2xl bg-white p-5 shadow-sm">
-          <h2 className="text-sm text-stone-400">数据与权限</h2>
+          <h2 className="text-sm text-stone-400">导出所有内容</h2>
           <p className="mt-3 text-sm leading-7 text-stone-500">
-            你可以先导出一份纪念备份，再决定是否保留这个空间。导出文件会带上纪念信息、最近记录、对话、祈福，以及临时照片下载链接。
+            我们会把你的纪念空间数据导出成一份备份文件，直接下载到你的电脑。
+          </p>
+          <p className="mt-3 text-sm leading-7 text-stone-500">
+            导出不会删除原来的纪念空间 — 只是给你一份副本。
           </p>
           <div className="mt-4 flex flex-col gap-3">
             <button
@@ -617,8 +688,22 @@ export default function SpiritPage({ params }: { params: { id: string } }) {
               disabled={isExporting}
               className="rounded-full border border-stone-300 px-5 py-3 text-sm text-stone-600 transition-colors hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isExporting ? '导出中...' : '导出纪念备份'}
+              {isExporting ? '导出中...' : '导出备份'}
             </button>
+          </div>
+          {dataNotice && <p className="mt-3 text-xs leading-6 text-emerald-600">{dataNotice}</p>}
+          {dataError && <p className="mt-3 text-xs leading-6 text-red-500">{dataError}</p>}
+        </div>
+
+        <div className="mb-8 rounded-2xl bg-white p-5 shadow-sm">
+          <h2 className="text-sm text-stone-400">删除纪念空间</h2>
+          <p className="mt-3 text-sm leading-7 text-stone-500">
+            删除后,以下内容会从我们的服务器上<span className="font-medium text-stone-700">永久清除</span>:照片、故事和文字记录、分享链接,以及所有访问和创建记录。
+          </p>
+          <p className="mt-3 text-sm leading-7 text-stone-500">
+            如果你只是暂时不想看到它,可以<span className="font-medium text-stone-700">先导出一份备份</span>再删除 — 这样你手上会有一份完整的文件,随时可以自己保存或以后重新上传。
+          </p>
+          <div className="mt-4 flex flex-col gap-3">
             <button
               onClick={() => {
                 setDataError('')
@@ -629,14 +714,9 @@ export default function SpiritPage({ params }: { params: { id: string } }) {
               disabled={isDeleting}
               className="rounded-full border border-red-200 px-5 py-3 text-sm text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isDeleting ? '删除中...' : '永久删除纪念空间'}
+              {isDeleting ? '删除中...' : '永久删除'}
             </button>
           </div>
-          <p className="mt-3 text-xs leading-6 text-stone-400">
-            删除会同时移除当前纪念空间的照片引用、记录、对话和祈福数据。若要保留资料，建议先导出。
-          </p>
-          {dataNotice && <p className="mt-3 text-xs leading-6 text-emerald-600">{dataNotice}</p>}
-          {dataError && <p className="mt-3 text-xs leading-6 text-red-500">{dataError}</p>}
         </div>
 
         <div className="mb-8">
@@ -691,7 +771,22 @@ export default function SpiritPage({ params }: { params: { id: string } }) {
 
         {/* 最近动态 */}
         <div>
-          <h2 className="text-sm text-stone-400 mb-3">最近记录</h2>
+          <div className="mb-3 flex items-center gap-2">
+            <h2 className="text-sm text-stone-400">最近记录</h2>
+            <div className="group relative">
+              <button
+                type="button"
+                className="flex h-6 w-6 items-center justify-center rounded-full border border-stone-200 bg-white text-xs text-stone-500"
+                aria-label="状态说明"
+              >
+                ℹ️
+              </button>
+              <div className="pointer-events-none absolute left-0 top-full z-10 mt-3 w-72 rounded-2xl bg-stone-900 px-4 py-4 text-xs leading-6 text-stone-100 opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+                <p>ℹ️ 这是<span className="font-medium">根据你讲的故事合成</span>的一句话,不是{spirit.name}真的在说什么。</p>
+                <p className="mt-2">我们不会假装它还活着在和你说话。</p>
+              </div>
+            </div>
+          </div>
           <div className="space-y-3">
             {spirit.statuses.map((status) => (
               <div key={status.id} className="flex items-start gap-3">
@@ -704,6 +799,9 @@ export default function SpiritPage({ params }: { params: { id: string } }) {
               </div>
             ))}
           </div>
+          <p className="mt-4 text-xs leading-6 text-stone-400">
+            StillHere 不做&quot;数字复活&quot;。我们记住你讲的故事,帮你把它放在一个地方。AI 的角色是整理和回放,不是复活。
+          </p>
         </div>
       </div>
 

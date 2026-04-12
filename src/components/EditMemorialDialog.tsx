@@ -209,6 +209,12 @@ export function EditMemorialDialog({
               />
             </div>
           </div>
+          <div className="rounded-2xl bg-stone-50 px-4 py-4">
+            <p className="text-xs leading-6 text-stone-500">你写的每一个字,都只有你能看到。</p>
+            <p className="text-xs leading-6 text-stone-500">
+              如果你以后开启分享,你的纪念空间会整体对你信任的人可见 — 但只有你能修改。
+            </p>
+          </div>
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
@@ -251,6 +257,13 @@ export function EditMemorialDialog({
                   />
                 </label>
               )}
+            </div>
+            <div className="rounded-2xl bg-white px-4 py-4">
+              <p className="text-sm leading-7 text-stone-500">照片上传后,存在一个<span className="font-medium text-stone-700">只有你能访问</span>的私有存储里。</p>
+              <p className="text-sm leading-7 text-stone-500">分享链接里的照片会用临时签名 URL,过期自动失效。</p>
+              <p className="mt-3 text-sm leading-7 text-stone-500">
+                我们<span className="font-medium text-stone-700">不会</span>把你的照片发给第三方 AI 做训练,也<span className="font-medium text-stone-700">不会</span>把它放进任何公开的展示集。
+              </p>
             </div>
 
             {spirit.photoUrls.length > 0 && (

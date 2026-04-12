@@ -34,8 +34,28 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN">
-      <body className={`${geistSans.variable} font-sans antialiased bg-amber-50 text-stone-800`}>
-        <Providers>{children}</Providers>
+      <body className={`${geistSans.variable} min-h-screen bg-amber-50 font-sans text-stone-800 antialiased`}>
+        <Providers>
+          <div className="flex min-h-screen flex-col">
+            <div className="flex-1">{children}</div>
+            <footer className="border-t border-stone-200 bg-white/80 px-6 py-8 backdrop-blur">
+              <div className="mx-auto grid max-w-5xl gap-4 text-sm leading-7 text-stone-500 md:grid-cols-4">
+                <p>
+                  <span className="font-medium text-stone-700">你的内容</span> · 你拥有 · 你可以删 · 你可以导出
+                </p>
+                <p>
+                  <span className="font-medium text-stone-700">默认私密</span> · 除非你主动分享,没人能进来
+                </p>
+                <p>
+                  <span className="font-medium text-stone-700">不训练</span> · 我们不用你的内容训练任何 AI 模型
+                </p>
+                <p>
+                  <span className="font-medium text-stone-700">不上链</span> · 敏感原始内容不会写到任何区块链上
+                </p>
+              </div>
+            </footer>
+          </div>
+        </Providers>
       </body>
     </html>
   );

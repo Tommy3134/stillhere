@@ -12,6 +12,7 @@ import { FeedbackPromptCard } from '@/components/FeedbackPromptCard'
 import { getMemorialInsight } from '@/lib/memorial-insights'
 import { getMemorialRoadmap } from '@/lib/memorial-roadmap'
 import { readResponsePayload } from '@/lib/read-response-payload'
+import { defaultSampleMemorial } from '@/lib/sample-memorial'
 
 interface Spirit {
   id: string
@@ -45,6 +46,14 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [pageError, setPageError] = useState('')
   const [deletedNotice, setDeletedNotice] = useState('')
+  const [showTrustBanner, setShowTrustBanner] = useState(false)
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !authenticated) return
+
+    const bannerSeen = window.localStorage.getItem('stillhere-dashboard-trust-banner-seen')
+    setShowTrustBanner(bannerSeen !== '1')
+  }, [authenticated])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -130,6 +139,28 @@ export default function DashboardPage() {
     <main className="min-h-screen bg-amber-50 px-6 py-8">
       <div className="max-w-md mx-auto">
         <h1 className="text-2xl font-light text-stone-700 mb-6">我的纪念空间</h1>
+        {showTrustBanner && (
+          <div className="mb-6 rounded-2xl bg-white px-5 py-4 text-sm leading-7 text-stone-500 shadow-sm">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p>👋 欢迎。这是你的纪念空间列表。</p>
+                <p className="mt-3">
+                  你可以创建多个 — 每一个默认只有你能看。想删除就删,想导出就导,想分享给某个朋友就生成一个链接。<span className="font-medium text-stone-700">这是你的地方。</span>
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowTrustBanner(false)
+                  window.localStorage.setItem('stillhere-dashboard-trust-banner-seen', '1')
+                }}
+                className="shrink-0 text-xs text-stone-500 underline underline-offset-4"
+              >
+                关闭
+              </button>
+            </div>
+          </div>
+        )}
         {deletedNotice && (
           <div className="mb-6 rounded-2xl bg-emerald-50 px-5 py-4 text-sm leading-6 text-emerald-700 shadow-sm">
             <div className="flex items-start justify-between gap-4">
@@ -156,18 +187,24 @@ export default function DashboardPage() {
         {spirits.length === 0 ? (
           <div className="space-y-6 py-12 text-center">
             <div>
-              <p className="mb-2 text-stone-400">还没有创建纪念空间</p>
-              <p className="mb-4 text-sm leading-6 text-stone-400">
-                {deletedNotice
-                  ? '如果你还想继续留下回忆，可以重新创建一个新的纪念空间。'
-                  : '这里会保存你为它们建立的私密纪念空间。'}
+              <p className="text-stone-700">你还没有创建任何纪念空间。</p>
+              <p className="mt-3 text-sm leading-7 text-stone-500">
+                如果你准备好了,可以从这里开始 — 或者先看看一个示例。
               </p>
-              <Link
-                href="/create"
-                className="inline-block rounded-full bg-amber-600 px-8 py-3 text-white transition-colors hover:bg-amber-700"
-              >
-                开始创建
-              </Link>
+              <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:justify-center">
+                <Link
+                  href="/create"
+                  className="inline-flex justify-center rounded-full bg-amber-600 px-8 py-3 text-white transition-colors hover:bg-amber-700"
+                >
+                  开始创建
+                </Link>
+                <Link
+                  href={`/sample/${defaultSampleMemorial.slug}`}
+                  className="inline-flex justify-center rounded-full border border-stone-300 px-8 py-3 text-stone-600 transition-colors hover:bg-stone-100"
+                >
+                  看示例
+                </Link>
+              </div>
             </div>
             <FeedbackPromptCard
               href="/feedback?source=dashboard"

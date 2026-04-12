@@ -31,6 +31,16 @@ interface SharePersonality {
   passedDate?: string
 }
 
+function getOwnerName(user?: { displayName?: string | null; email?: string | null } | null) {
+  const displayName = user?.displayName?.trim()
+  if (displayName) return displayName
+
+  const emailPrefix = user?.email?.split('@')[0]?.trim()
+  if (emailPrefix) return emailPrefix
+
+  return '主人'
+}
+
 function formatMemorialDate(date: string) {
   return new Intl.DateTimeFormat('zh-CN', {
     year: 'numeric',
@@ -59,6 +69,12 @@ async function getSpirit(id: string) {
   const spirit = await prisma.spirit.findFirst({
     where: { id, shareEnabled: true },
     include: {
+      user: {
+        select: {
+          displayName: true,
+          email: true,
+        },
+      },
       statuses: {
         orderBy: { createdAt: 'desc' },
         take: 5,
@@ -125,10 +141,20 @@ export default async function SharePage({ params }: Props) {
     personality.funnyStory ? { label: '总会让人想起的一件事', value: personality.funnyStory } : null,
   ].filter((item): item is { label: string; value: string } => Boolean(item))
   const tags = Array.isArray(personality.tags) ? personality.tags : []
+  const ownerName = getOwnerName(spirit.user)
 
   return (
     <main className="min-h-screen bg-amber-50 flex flex-col items-center px-6 py-12">
       <div className="max-w-xl w-full space-y-8">
+        <div className="rounded-2xl bg-white/80 px-5 py-5 shadow-sm">
+          <p className="text-sm leading-7 text-stone-500">
+            你正在看 <span className="font-medium text-stone-700">{spirit.name}</span> 的纪念空间 — 这是主人 {ownerName} 分享给你的。
+          </p>
+          <p className="mt-3 text-sm leading-7 text-stone-500">
+            你可以看照片和故事,<span className="font-medium text-stone-700">但不会留下访问记录</span>,也不能留言或修改。
+          </p>
+        </div>
+
         {/* 头像 */}
         <div className="flex flex-col items-center space-y-4">
           {hasPhoto ? (
@@ -230,6 +256,9 @@ export default async function SharePage({ params }: Props) {
                 </div>
               ))}
             </div>
+            <p className="text-center text-xs leading-6 text-stone-400">
+              StillHere 不做&quot;数字复活&quot;。我们记住你讲的故事,帮你把它放在一个地方。AI 的角色是整理和回放,不是复活。
+            </p>
           </div>
         )}
 
@@ -263,6 +292,13 @@ export default async function SharePage({ params }: Props) {
           </Link>
           <p className="text-xs text-stone-400 mt-3">
             仍在 / StillHere - 留下一个可以回来看它的地方
+          </p>
+        </div>
+
+        <div className="rounded-2xl bg-white/70 px-5 py-5 text-center shadow-sm">
+          <p className="text-sm leading-7 text-stone-500">这是一个纪念空间,不是社交媒体。</p>
+          <p className="mt-2 text-sm leading-7 text-stone-500">
+            如果你想表达什么,请直接告诉主人,而不是留下评论 — 这个地方是为主人和 TA 的记忆留的,不是为了讨论。
           </p>
         </div>
       </div>

@@ -27,7 +27,7 @@ export default function BirthAnimation({ spiritId, name, spiritType, homeStyle }
 
   useEffect(() => {
     if (phase === 'done') {
-      router.push(`/spirit/${spiritId}`)
+      router.push(`/spirit/${spiritId}?created=1`)
     }
   }, [phase, spiritId, router])
 

@@ -61,6 +61,7 @@ export interface LocalSpiritRecord {
 }
 
 export interface LocalSpiritWithRelations extends LocalSpiritRecord {
+  user?: Pick<LocalDevUser, 'displayName' | 'email'> | null
   statuses: LocalSpiritStatusRecord[]
   messages?: LocalMessageRecord[]
   blessings?: LocalBlessingRecord[]
@@ -250,7 +251,17 @@ export async function getLocalSharedSpirit(id: string) {
     return null
   }
 
-  return withSpiritRelations(store, spirit, { statusLimit: 5 })
+  const owner = store.users.find((user) => user.id === spirit.userId)
+
+  return {
+    ...withSpiritRelations(store, spirit, { statusLimit: 5 }),
+    user: owner
+      ? {
+          displayName: owner.displayName,
+          email: owner.email,
+        }
+      : null,
+  }
 }
 
 export async function createLocalSpirit(input: {
