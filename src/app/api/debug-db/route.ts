@@ -1,35 +1,71 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import pg from 'pg'
 
 export async function GET() {
   const results: Record<string, unknown> = {
     timestamp: new Date().toISOString(),
-    env: {
-      DATABASE_URL_set: Boolean(process.env.DATABASE_URL),
-      DATABASE_URL_preview: process.env.DATABASE_URL
-        ? process.env.DATABASE_URL.replace(/:[^:@]*@/, ':***@').slice(0, 80) + '...'
-        : 'NOT SET',
-      DIRECT_URL_set: Boolean(process.env.DIRECT_URL),
-      NODE_ENV: process.env.NODE_ENV,
-      VERCEL_REGION: process.env.VERCEL_REGION || 'unknown',
-    },
+    region: process.env.VERCEL_REGION || 'unknown',
+    dbUrlSet: Boolean(process.env.DATABASE_URL),
+    dbUrlPreview: process.env.DATABASE_URL
+      ? process.env.DATABASE_URL.replace(/:[^:@]*@/, ':***@')
+      : 'NOT SET',
   }
 
+  // Test 1: raw pg connection (bypass Prisma entirely)
   try {
     const start = Date.now()
-    const count = await prisma.user.count()
-    results.db = {
+    const pool = new pg.Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: false },
+      max: 1,
+      connectionTimeoutMillis: 8000,
+    })
+    const client = await pool.connect()
+    const res = await client.query('SELECT count(*) FROM users')
+    client.release()
+    await pool.end()
+    results.rawPg = {
       status: 'connected',
-      userCount: count,
+      userCount: res.rows[0].count,
       latencyMs: Date.now() - start,
     }
   } catch (error) {
-    results.db = {
+    results.rawPg = {
       status: 'failed',
       error: error instanceof Error ? error.message : String(error),
       code: (error as { code?: string }).code,
     }
   }
 
-  return NextResponse.json(results, { status: results.db && (results.db as { status: string }).status === 'connected' ? 200 : 500 })
+  // Test 2: Prisma adapter connection
+  try {
+    const { PrismaClient } = await import('@prisma/client')
+    const { PrismaPg } = await import('@prisma/adapter-pg')
+    const start = Date.now()
+    const adapter = new PrismaPg({
+      connectionString: process.env.DATABASE_URL!,
+      ssl: { rejectUnauthorized: false },
+      max: 1,
+      connectionTimeoutMillis: 8000,
+    })
+    const prisma = new PrismaClient({ adapter })
+    const count = await prisma.user.count()
+    await prisma.$disconnect()
+    results.prismaAdapter = {
+      status: 'connected',
+      userCount: count,
+      latencyMs: Date.now() - start,
+    }
+  } catch (error) {
+    results.prismaAdapter = {
+      status: 'failed',
+      error: error instanceof Error ? error.message.slice(0, 300) : String(error),
+      code: (error as { code?: string }).code,
+    }
+  }
+
+  const anySuccess = (results.rawPg as { status: string })?.status === 'connected' ||
+    (results.prismaAdapter as { status: string })?.status === 'connected'
+
+  return NextResponse.json(results, { status: anySuccess ? 200 : 500 })
 }
