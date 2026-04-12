@@ -17,15 +17,16 @@ export function useAuthFetch() {
     const headers = new Headers(options?.headers)
 
     if (ready && getAccessToken) {
-      try {
-        const token = await Promise.race([
-          getAccessToken(),
-          new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
-        ])
-        if (token) headers.set('Authorization', `Bearer ${token}`)
-      } catch {
-        // continue without auth
+      const token = await Promise.race([
+        getAccessToken(),
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 15000)),
+      ])
+
+      if (!token) {
+        throw new Error('会话已过期,请刷新页面重新登录')
       }
+
+      headers.set('Authorization', `Bearer ${token}`)
     }
 
     return fetch(url, { ...options, headers })

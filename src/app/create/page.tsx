@@ -378,14 +378,26 @@ export default function CreatePage() {
                   // 上传照片
                   let photoUrls: string[] = []
                   if (photos.length > 0) {
-                    const formData = new FormData()
-                    photos.forEach(f => formData.append('photos', f))
-                    const uploadRes = await authFetch('/api/upload', { method: 'POST', body: formData })
-                    const uploadData = await readResponsePayload(uploadRes)
-                    if (!uploadRes.ok) {
-                      throw new Error(uploadData.error || '照片上传失败')
-                    }
-                    if (uploadData.paths) photoUrls = uploadData.paths
+                    photoUrls = await Promise.all(
+                      photos.map(async (photo) => {
+                        const formData = new FormData()
+                        formData.append('photos', photo)
+
+                        const uploadRes = await authFetch('/api/upload', { method: 'POST', body: formData })
+                        const uploadData = await readResponsePayload(uploadRes)
+
+                        if (!uploadRes.ok) {
+                          throw new Error(uploadData.error || '照片上传失败')
+                        }
+
+                        const uploadedPath = uploadData.paths?.[0]
+                        if (!uploadedPath) {
+                          throw new Error('照片上传失败')
+                        }
+
+                        return uploadedPath
+                      })
+                    )
                   }
 
                   const res = await authFetch('/api/spirit', {
