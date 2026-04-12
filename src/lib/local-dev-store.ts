@@ -13,6 +13,7 @@ export interface LocalDevUser {
   walletAddress: NullableString
   displayName: NullableString
   avatarUrl: NullableString
+  consentAcceptedAt: NullableString
   createdAt: string
   updatedAt: string
 }
@@ -200,12 +201,23 @@ export async function getOrCreateLocalDevUser(input: {
       walletAddress: input.walletAddress ?? null,
       displayName: null,
       avatarUrl: null,
+      consentAcceptedAt: null,
       createdAt: now,
       updatedAt: now,
     }
 
     store.users.push(user)
     return user
+  })
+}
+
+export async function updateLocalUserConsent(userId: string) {
+  return updateStore((store) => {
+    const user = store.users.find((u) => u.id === userId)
+    if (user) {
+      user.consentAcceptedAt = new Date().toISOString()
+      user.updatedAt = new Date().toISOString()
+    }
   })
 }
 

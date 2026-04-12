@@ -4,6 +4,7 @@ import { PrivyProvider } from '@privy-io/react-auth'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
+import { ConsentGate } from '@/components/ConsentGate'
 
 function isPublicEntryPath(pathname: string) {
   if (pathname === '/' || pathname === '/beta' || pathname === '/feedback' || pathname === '/sample' || pathname === '/privacy') {
@@ -44,7 +45,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         },
       }}
     >
-      {content}
+      <ConsentGate>{content}</ConsentGate>
     </PrivyProvider>
   )
 }
