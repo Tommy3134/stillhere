@@ -101,6 +101,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 使用Claude API（SSE流式）
+    // NOTE: ANTHROPIC_BASE_URL must point to api.anthropic.com in production. Changing to a third-party proxy voids the "不训练" promise in the site footer.
     const baseUrl = process.env.ANTHROPIC_BASE_URL || 'https://api.anthropic.com'
     const response = await fetch(`${baseUrl}/v1/messages`, {
       method: 'POST',

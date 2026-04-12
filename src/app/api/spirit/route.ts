@@ -5,6 +5,7 @@ import { getAuthUser } from '@/lib/auth'
 import { createSignedPhotoUrls, deleteStorageFiles } from '@/lib/storage'
 import { shouldUseLocalDevStore } from '@/lib/database-health'
 import { sanitizeStatusRecord } from '@/lib/status-guardrails'
+import { deleteLocalFeedbackSubmissionsBySpiritId } from '@/lib/local-feedback-store'
 import {
   createLocalSpirit,
   deleteLocalSpirit,
@@ -323,6 +324,7 @@ export async function DELETE(req: NextRequest) {
         return NextResponse.json({ error: 'Spirit not found' }, { status: 404 })
       }
 
+      await deleteLocalFeedbackSubmissionsBySpiritId(id)
       await deleteStorageFiles(spirit.photoUrls)
       return NextResponse.json({ success: true })
     }
@@ -340,6 +342,7 @@ export async function DELETE(req: NextRequest) {
       prisma.blessing.deleteMany({ where: { spiritId: id } }),
       prisma.message.deleteMany({ where: { spiritId: id } }),
       prisma.spiritStatus.deleteMany({ where: { spiritId: id } }),
+      prisma.feedbackSubmission.deleteMany({ where: { spiritId: id } }),
       prisma.spirit.delete({ where: { id } }),
     ])
 

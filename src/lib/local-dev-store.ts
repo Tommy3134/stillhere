@@ -357,6 +357,7 @@ export async function deleteLocalSpirit(userId: string, id: string) {
     store.statuses = store.statuses.filter((status) => status.spiritId !== id)
     store.messages = store.messages.filter((message) => message.spiritId !== id)
     store.blessings = store.blessings.filter((blessing) => blessing.spiritId !== id)
+    // Local feedback entries live in local-feedback-store NDJSON and are cleaned in the API route.
 
     return spirit
   })

@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { appendFile, mkdir, readFile } from 'fs/promises'
+import { appendFile, mkdir, readFile, writeFile } from 'fs/promises'
 import path from 'path'
 
 import type { FeedbackSubmissionInput } from './validations'
@@ -27,6 +27,50 @@ export async function appendLocalFeedbackSubmission(input: FeedbackSubmissionInp
 export interface LocalFeedbackSubmissionRecord extends FeedbackSubmissionInput {
   userId: string | null
   createdAt: string
+}
+
+async function removeFeedbackFromFile(filePath: string, spiritId: string) {
+  try {
+    const raw = await readFile(filePath, 'utf8')
+    const lines = raw
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean)
+
+    let removed = 0
+    const kept = lines.filter((line) => {
+      try {
+        const item = JSON.parse(line) as LocalFeedbackSubmissionRecord
+        if (item.context?.spiritId === spiritId) {
+          removed += 1
+          return false
+        }
+      } catch {
+        return true
+      }
+
+      return true
+    })
+
+    await mkdir(path.dirname(filePath), { recursive: true })
+    await writeFile(filePath, kept.length > 0 ? `${kept.join('\n')}\n` : '', 'utf8')
+    return removed
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return 0
+    }
+
+    throw error
+  }
+}
+
+export async function deleteLocalFeedbackSubmissionsBySpiritId(spiritId: string) {
+  const removedCounts = await Promise.all([
+    removeFeedbackFromFile(feedbackLogPath, spiritId),
+    removeFeedbackFromFile(legacyFeedbackLogPath, spiritId),
+  ])
+
+  return removedCounts.reduce((sum, count) => sum + count, 0)
 }
 
 export async function listLocalFeedbackSubmissions(options?: {

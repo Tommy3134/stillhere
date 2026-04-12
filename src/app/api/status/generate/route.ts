@@ -85,6 +85,7 @@ async function generateWithAI(
   spirit: { name: string; spiritType: string; personality: PersonalityData },
   apiKey: string,
 ): Promise<string> {
+  // NOTE: ANTHROPIC_BASE_URL must point to api.anthropic.com in production. Changing to a third-party proxy voids the "不训练" promise in the site footer.
   const baseUrl = process.env.ANTHROPIC_BASE_URL || 'https://api.anthropic.com'
   const prompt = buildStatusPrompt({
     name: spirit.name,
